@@ -312,6 +312,13 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         }
     }
 
+    /** Drops every "held" input (focus lost, a controller vanished): nothing may keep repeating on its own. */
+    fun releaseAll() {
+        heldDir = 0
+        aDown = false
+        aHold = 0f
+    }
+
     /** The shelf's frame loop calls this when A has been held long enough. */
     fun holdCompleted() {
         if (aDown && screen == Screen.Browse) {

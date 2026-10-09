@@ -81,7 +81,10 @@ class GameActivity : ComponentActivity(), SlotHost {
     private var ffLocked = false
     private var lastR2Tap = 0L
     private val turboJobs = HashMap<Int, Runnable>()
-    private val axisNav = AxisNav { pad, repeat -> state.press(pad, repeat, android.os.SystemClock.uptimeMillis()) }
+    private val axisNav = AxisNav(
+        { pad, repeat -> state.press(pad, repeat, android.os.SystemClock.uptimeMillis()) },
+        { pad -> state.release(pad, android.os.SystemClock.uptimeMillis()) },
+    )
     private var housekeeping: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -538,7 +541,7 @@ class GameActivity : ComponentActivity(), SlotHost {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemBars()
+        if (hasFocus) hideSystemBars() else axisNav.stop()
     }
 
     override fun onResume() {

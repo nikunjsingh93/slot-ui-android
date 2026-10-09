@@ -41,7 +41,10 @@ class MainActivity : ComponentActivity(), SlotHost {
     private lateinit var state: SlotState
     private lateinit var sounds: Sounds
     private lateinit var covers: Covers
-    private val axisNav = AxisNav { pad, repeat -> state.press(pad, repeat, android.os.SystemClock.uptimeMillis()) }
+    private val axisNav = AxisNav(
+        { pad, repeat -> state.press(pad, repeat, android.os.SystemClock.uptimeMillis()) },
+        { pad -> state.release(pad, android.os.SystemClock.uptimeMillis()) },
+    )
     private var scanJob: kotlinx.coroutines.Job? = null
 
     private val pickFolder = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -121,7 +124,7 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemBars()
+        if (hasFocus) hideSystemBars() else { axisNav.stop(); state.releaseAll() }
     }
 
     // --- HUD feeds -----------------------------------------------------------------------------

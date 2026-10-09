@@ -78,7 +78,7 @@ object KeyMap {
  * Turns a hat switch / analog stick into repeating directional presses, for menus.
  * (Real DPAD *keys* arrive with Android's own auto-repeat, this is only for axes.)
  */
-class AxisNav(private val onPress: (Pad, Boolean) -> Unit) {
+class AxisNav(private val onPress: (Pad, Boolean) -> Unit, private val onRelease: (Pad) -> Unit = {}) {
     private val handler = Handler(Looper.getMainLooper())
     private var held: Pad? = null
     private var repeater: Runnable? = null
@@ -96,8 +96,8 @@ class AxisNav(private val onPress: (Pad, Boolean) -> Unit) {
         }
         if (dir != held) {
             stop()
-            held = dir
             if (dir != null) {
+                held = dir
                 onPress(dir, false)
                 val r = object : Runnable {
                     override fun run() { held?.let { onPress(it, true) }; handler.postDelayed(this, 90) }
@@ -109,9 +109,12 @@ class AxisNav(private val onPress: (Pad, Boolean) -> Unit) {
         return true
     }
 
+    /** Ends the current hold, telling the UI the direction was released (a hat/stick going back to centre is a key-up). */
     fun stop() {
         repeater?.let { handler.removeCallbacks(it) }
         repeater = null
+        val was = held
         held = null
+        if (was != null) onRelease(was)
     }
 }
