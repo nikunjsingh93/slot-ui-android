@@ -28,6 +28,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     var playing by mutableStateOf<Game?>(null)
     val covers = mutableStateMapOf<String, ImageBitmap>()
     val states = mutableStateListOf<StateSlot>()
+    /** Which installed apps are shown, and as what. Anything missing is hidden. */
+    val appKinds = mutableStateMapOf<String, AppKind>()
 
     /** Monotonic counter bumped on every move; lets the shelf play a tick without diffing. */
     var moveTick by mutableIntStateOf(0)

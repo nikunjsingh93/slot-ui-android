@@ -297,13 +297,13 @@ class CartPainter private constructor(
                 val l = Rect(c.x - d.labelRadius, c.y - d.labelRadius, c.x + d.labelRadius, c.y + d.labelRadius)
                 if (cover != null) {
                     // PlayStation 1 covers carry a spine down the left edge: crop it away
-                    val trim = if (game.system == GameSystem.PSX) 0.84f else 1f
+                    val trim = if (game.system == GameSystem.PSX || game.system == GameSystem.DC) 0.84f else 1f
                     val srcSide = min(min(cover.width * trim, cover.height * trim), min(cover.width.toFloat(), cover.height.toFloat()))
                     val sw = srcSide.toInt()
                     val sh = srcSide.toInt()
                     drawImage(
                         cover,
-                        srcOffset = IntOffset(if (game.system == GameSystem.PSX) cover.width - sw else (cover.width - sw) / 2, ((cover.height - sh) * (if (game.system == GameSystem.GC) 0.4f else 0.6f)).toInt()), srcSize = IntSize(sw, sh),
+                        srcOffset = IntOffset(if (game.system == GameSystem.PSX || game.system == GameSystem.DC) cover.width - sw else (cover.width - sw) / 2, ((cover.height - sh) * (if (game.system == GameSystem.GC) 0.4f else 0.6f)).toInt()), srcSize = IntSize(sw, sh),
                         dstOffset = IntOffset(l.left.toInt(), l.top.toInt()), dstSize = IntSize(side.toInt() + 1, side.toInt() + 1),
                         alpha = alpha,
                     )
@@ -322,7 +322,7 @@ class CartPainter private constructor(
             }
             drawCircle(Color.Black.copy(alpha = .55f * alpha), d.labelRadius, c, style = Stroke(1.4f))
             // brand lettering on the rim, above the label
-            val ink = if (lightShell) Color(0xFF2A2A30) else Color.White
+            val ink = if (game.system == GameSystem.DC) Color(0xFFE8631A) else if (lightShell) Color(0xFF2A2A30) else Color.White
             letterText?.let { t ->
                 val y = c.y - (d.radius + d.labelRadius) / 2f - t.size.height / 2f
                 drawText(t, ink.copy(alpha = .85f), topLeft = Offset(c.x - t.size.width / 2f, y), alpha = alpha)

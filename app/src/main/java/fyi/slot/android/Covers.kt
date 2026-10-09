@@ -28,6 +28,7 @@ class Covers(private val ctx: Context) {
     private val gate = Semaphore(3)
 
     suspend fun load(game: Game, allowNetwork: Boolean): ImageBitmap? = withContext(Dispatchers.IO) {
+        if (Apps.isApp(game)) return@withContext Apps.icon(ctx, Apps.packageOf(game))
         for (ext in listOf("png", "jpg", "jpeg", "webp")) {
             val f = File(custom, "${game.stem}.$ext")
             if (f.exists()) decode(f)?.let { return@withContext it }

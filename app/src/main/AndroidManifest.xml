@@ -13,6 +13,13 @@
         <package android:name="org.mupen64plusae.v3.fzurita.pro" />
         <package android:name="org.dolphinemu.dolphinemu" />
         <package android:name="org.dolphinemu.mmjr" />
+        <package android:name="org.ppsspp.ppsspp" />
+        <package android:name="io.recompiled.redream" />
+        <!-- every app that has a launcher icon, for Settings > Apps & games -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
 

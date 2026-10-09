@@ -9,7 +9,7 @@ the contacts, neighbours sliding aside, the screen dimming into the game.
 
 | | |
 |---|---|
-| Systems | GBA, GBC, GB, NES, SNES, Mega Drive/Genesis, Master System, Game Gear, PC Engine run inside slot. PlayStation, PS2, N64 and GameCube open your installed emulator |
+| Systems | GBA, GBC, GB, NES, SNES, Mega Drive/Genesis, Master System, Game Gear and PC Engine run inside slot. PlayStation, PS2, PSP, N64, GameCube and Dreamcast open your installed emulator. Android apps and games can be added too. |
 | Cores | mGBA, gpSP, Gambatte, FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast (libretro, via [LibretroDroid](https://github.com/Swordfish90/LibretroDroid)) |
 | Input | Gamepad first (handhelds), touch controls and swipe when no controller is connected |
 | Target | Android 8+, arm64 |
@@ -43,7 +43,7 @@ If your handheld reports A/B the other way round, flip **Settings > Controls > S
 ## Systems that open your own emulators
 
 Discs and cartridges slot doesn't emulate itself are launched in the emulator app you already have. Put games in a
-folder named after the system (`PSX`, `PS2`, `N64`, `GC` or `GameCube`) inside the ROM folder you picked.
+folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`/`Dreamcast`, in almost any spelling) inside the ROM folder you picked.
 
 | System | Emulator it opens | Notes |
 |---|---|---|
@@ -51,10 +51,24 @@ folder named after the system (`PSX`, `PS2`, `N64`, `GC` or `GameCube`) inside t
 | PlayStation 2 | AetherSX2 | `.iso`, `.chd`, `.cso`, `.cue` |
 | Nintendo 64 | M64Plus FZ (Pro) | `.z64`, `.n64`, `.v64`, and `.zip` straight from the folder |
 | GameCube | Dolphin, or Dolphin MMJR | `.iso`, `.ciso`, `.gcm`, `.rvz`, `.gcz`, `.wbfs` |
+| PSP | PPSSPP | `.iso`, `.cso`, `.pbp`, `.chd` |
+| Dreamcast | Redream | `.chd`, `.gdi`, `.cdi`, `.cue` |
 
 Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
 and come back to slot, the disc pops back out of the slot. Cover art for discs is cropped from the libretro box art.
 ArmSX2 can't be told which game to boot, so PS2 games open in AetherSX2.
+
+Folder names are matched loosely, so `DC`, `dc`, `Dreamcast`, `Sega Dreamcast (Games)`, `PS1`, `Sony PlayStation`, `Game Cube`,
+`NGC`, `Nintendo 64`, `Mega Drive`, `Super Nintendo` and so on all work, anywhere in the folder tree you picked.
+
+## Android apps and games
+
+Nothing is shown by default. Open **Settings > Apps & games** to see every app on the device (Android's own "game"
+tag is shown next to the ones it thinks are games) and set each one to **Hidden**, **App** or **Game**. Apps get an
+**Apps** shelf and games an **Installed** shelf, as square Switch-style cards with the app icon on the face.
+They slide into the slot like any other cart, and coming back to slot ejects them.
+
+
 
 ## Building
 

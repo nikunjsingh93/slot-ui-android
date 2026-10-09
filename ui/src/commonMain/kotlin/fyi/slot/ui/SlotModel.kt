@@ -53,6 +53,11 @@ enum class TouchMode(val label: String) { Auto("When no controller"), Always("Al
 /** A save-state slot shown in the switcher. */
 data class StateSlot(val slot: Int, val label: String, val thumb: ImageBitmap?, val time: String)
 
+/** An installed Android app the user can put on the Apps or Installed shelf. */
+data class AppEntry(val pkg: String, val label: String, val likelyGame: Boolean)
+
+enum class AppKind(val label: String) { Hidden("Hidden"), App("App"), Game("Game") }
+
 /** Everything the Android (or preview) host has to provide to the shared UI. */
 interface SlotHost {
     fun onLaunch(game: Game, resume: Boolean) {}
@@ -60,6 +65,9 @@ interface SlotHost {
     fun onSettingsChanged(settings: Settings) {}
     fun onPickLibrary() {}
     fun onRescan() {}
+    /** Every launchable app on the device, for Settings > Apps & games. */
+    fun listApps(): List<AppEntry> = emptyList()
+    fun onAppKind(pkg: String, kind: AppKind) {}
     fun onAction(action: GameAction) {}
     /** Touch overlay button for the running game. */
     fun onButton(pad: Pad, down: Boolean) {}

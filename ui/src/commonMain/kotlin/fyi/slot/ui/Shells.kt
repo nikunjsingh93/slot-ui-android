@@ -73,6 +73,9 @@ object Shells {
         CartShape.DISC_PSX -> sh(0x2a2b31)
         CartShape.DISC_PS2 -> sh(0x14203f)
         CartShape.DISC_GC -> sh(0xc4c7d2)
+        CartShape.DISC_DC -> sh(0xdfe1e8)
+        CartShape.UMD -> sh(0x6f7482, Finish.Translucent)
+        CartShape.APP_CARD -> if (game.system == GameSystem.INSTALLED) sh(0x25262b) else sh(0xe6e8ee)
     }
 
     /** FNV-1a hash of the title -> hue, exactly as cart.rs label_colour does. */

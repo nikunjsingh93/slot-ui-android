@@ -103,6 +103,7 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
         MenuSub("Screen") { screenPage(null) },
         MenuSub("Gameplay") { gameplayPage() },
         MenuSub("Controls") { controlsPage() },
+        MenuSub("Apps & games") { appsPage() },
         MenuSub("Button guide") {
             MenuPage("Button guide", listOf(
                 MenuInfo("Left / Right", "Browse (hold to speed up)"),
@@ -125,3 +126,18 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
         },
     ),
 )
+
+/** Settings > Apps & games: every launchable app, each one Hidden (default), an App or a Game. */
+private fun SlotState.appsPage(): MenuPage {
+    val apps = host.listApps()
+    val rows = apps.map { a ->
+        val label = if (a.likelyGame) "${a.label}  (game)" else a.label
+        MenuChoice(label, AppKind.entries.map { it.label }, { (appKinds[a.pkg] ?: AppKind.Hidden).ordinal }) { i ->
+            val kind = AppKind.entries[i]
+            if (kind == AppKind.Hidden) appKinds.remove(a.pkg) else appKinds[a.pkg] = kind
+            host.onAppKind(a.pkg, kind)
+        }
+    }
+    val items: List<MenuItem> = if (rows.isEmpty()) listOf(MenuInfo("No apps found")) else rows
+    return MenuPage("Apps & games", items, subtitle = "Choose where each one shows")
+}

@@ -37,6 +37,14 @@ object ExternalLauncher {
         Emulator("dolphin_mmjr", "org.dolphinemu.mmjr", "Dolphin MMJR") { _, path ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.mmjr", "org.dolphinemu.dolphinemu.ui.main.MainActivity")
         },
+        // PPSSPP: an "open this file" request with the plain path
+        Emulator("ppsspp", "org.ppsspp.ppsspp", "PPSSPP") { _, path ->
+            Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.ppsspp.ppsspp", "org.ppsspp.ppsspp.PpssppActivity")
+        },
+        // Redream: same, it opens whatever string it is given as a path
+        Emulator("redream", "io.recompiled.redream", "Redream") { _, path ->
+            Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("io.recompiled.redream", "io.recompiled.redream.MainActivity")
+        },
     )
 
     sealed interface Result {
@@ -64,6 +72,11 @@ object ExternalLauncher {
     }
 
     fun launch(ctx: Context, game: Game): Result {
+        if (Apps.isApp(game)) {
+            val pkg = Apps.packageOf(game)
+            val intent = ctx.packageManager.getLaunchIntentForPackage(pkg) ?: return Result.Failed("${game.title} isn't installed any more")
+            return runCatching { ctx.startActivity(intent); Result.Started(game.title) }.getOrElse { Result.Failed("${game.title} wouldn't open") }
+        }
         val path = pathOf(game) ?: return Result.Failed("Slot can't work out where ${game.title} is stored")
         val choices = candidates(game)
         for (c in choices) {

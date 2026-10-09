@@ -96,6 +96,8 @@ fun main(args: Array<String>) {
     if (which == "all" || which == "extra") extraShots(out)
     if (which == "all" || which == "device") deviceShots(out)
     if (which == "anim") animShots(out)
+    if (which == "apps") appShots(out)
+    if (which == "folders") folderCheck()
     if (which == "consoles") consoleShots(out)
 
     if (which == "all" || which == "phone") {
@@ -227,4 +229,29 @@ fun consoleShots(out: File) {
     st.switchSystem(-2); st.covers[st.shelf[0].id] = fakeThumb(2); h.ms(600); h.snap("ps2")
     st.press(Pad.Start); h.ms(1000); h.snap("ps2_picker")
     h.close()
+}
+
+fun appShots(out: File) {
+    val games = listOf(
+        sample(GameSystem.PSP, "Virtua Tennis - World Tour (USA)"),
+        sample(GameSystem.PSP, "God of War - Chains of Olympus (USA)"),
+        sample(GameSystem.DC, "SoulCalibur (USA)"),
+        sample(GameSystem.DC, "Crazy Taxi 2 (USA)"),
+        sample(GameSystem.APPS, "Chrome"),
+        sample(GameSystem.APPS, "Settings"),
+        sample(GameSystem.INSTALLED, "Genshin Impact"),
+        sample(GameSystem.INSTALLED, "Minecraft"),
+    )
+    val s = Shoot(out, "apps", 1500, 800) { fyi.slot.ui.CartGallery(games) }
+    s.snap(); s.close()
+    val st = SlotState().apply { setLibrary(games); systemIndex = 2 }
+    st.covers[st.shelf[0].id] = fakeThumb(7)
+    val h = Shoot(out, "apps_shelf", 1280, 960) { SlotRoot(st) }
+    h.ms(600); h.snap("apps"); st.switchSystem(1); h.ms(600); h.snap("installed")
+    h.close()
+}
+
+fun folderCheck() {
+    val names = listOf("DC", "dc", "Dreamcast", "Sega Dreamcast (Games)", "SEGA_DC", "PSX", "ps1", "Sony PlayStation", "PlayStation 2", "PS2", "playstation portable", "PSP", "N64", "Nintendo 64", "GameCube", "Game Cube", "NGC", "gc", "GBA", "Game Boy Advance", "Game Boy", "gbc", "SNES", "Super Nintendo", "Mega Drive", "Genesis", "Roms", "Games", "1Windows", "GTAV", "Sega Master System", "TurboGrafx-16", "PC Engine", "FC", "NES")
+    for (n in names) println("%-26s -> %s".format(n, GameSystem.byFolder(n)?.id))
 }

@@ -39,6 +39,10 @@ import kotlin.math.min
 
 class MainActivity : ComponentActivity(), SlotHost {
     private lateinit var state: SlotState
+    /** Games found by the ROM scan; apps are added on top of this by [publish]. */
+    private var romGames: List<Game> = emptyList()
+
+    private fun publish() = state.setLibrary(romGames + Apps.games(this, state.appKinds))
     private lateinit var sounds: Sounds
     private lateinit var covers: Covers
     private val axisNav = AxisNav(
@@ -74,10 +78,13 @@ class MainActivity : ComponentActivity(), SlotHost {
         covers = Covers(this)
         state = SlotState(this).also {
             it.settings = Persist.loadSettings(this)
-            it.setLibrary(Persist.loadLibrary(this))
+            it.appKinds.putAll(Apps.loadKinds(this))
             it.gamepad = KeyMap.hasGamepad()
         }
         sounds.enabled = state.settings.sounds
+
+        romGames = Persist.loadLibrary(this)
+        publish()
 
         setContent { SlotRoot(state) }
 
@@ -177,7 +184,7 @@ class MainActivity : ComponentActivity(), SlotHost {
             }
             val list = runCatching {
                 Scanner(this@MainActivity).scan(roots, local) { partial ->
-                    runOnUiThread { if (state.scanning && before == 0) state.setLibrary(merge(partial)) }
+                    runOnUiThread { if (state.scanning && before == 0) { romGames = merge(partial); publish() } }
                 }
             }.getOrElse {
                 if (it is kotlinx.coroutines.CancellationException) throw it
@@ -188,7 +195,8 @@ class MainActivity : ComponentActivity(), SlotHost {
             val merged = merge(list)
             withContext(Dispatchers.IO) { Persist.saveLibrary(this@MainActivity, merged) }
             state.scanning = false
-            state.setLibrary(merged)
+            romGames = merged
+            publish()
             if (!quiet || merged.size != before) state.toast("${merged.size} games in your library")
         }
     }
@@ -265,6 +273,13 @@ class MainActivity : ComponentActivity(), SlotHost {
     }
 
     override fun onRescan() = rescan(quiet = false)
+
+    override fun listApps(): List<fyi.slot.ui.AppEntry> = Apps.list(this)
+
+    override fun onAppKind(pkg: String, kind: fyi.slot.ui.AppKind) {
+        Apps.saveKinds(this, state.appKinds)
+        publish()
+    }
 
     override fun onAction(action: GameAction) {}
 

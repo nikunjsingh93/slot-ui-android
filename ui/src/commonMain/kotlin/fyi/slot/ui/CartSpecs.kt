@@ -104,6 +104,9 @@ object CartSpecs {
         CartShape.DISC_PSX -> cache.getOrPut("psx") { disc(240f, labelR = 104f, hub = 36f, hole = 13f) }
         CartShape.DISC_PS2 -> cache.getOrPut("ps2") { disc(240f, labelR = 100f, hub = 38f, hole = 13f) }
         CartShape.DISC_GC -> cache.getOrPut("gc") { disc(200f, labelR = 82f, hub = 30f, hole = 11f) }
+        CartShape.DISC_DC -> cache.getOrPut("dc") { disc(240f, labelR = 100f, hub = 36f, hole = 13f) }
+        CartShape.UMD -> cache.getOrPut("umd") { umd() }
+        CartShape.APP_CARD -> cache.getOrPut("app") { appCard() }
     }
 
     // --- GBA: crates/slot-ui/assets/cart.svg + cart_detail.svg ------------------------------
@@ -298,5 +301,35 @@ private fun CartSpecs.n64(): CartSpec {
             Relief(rectPath(100f, 184f, 40f, 6f), raised = false),
         ),
         pinsTop = .9f, letteringY = 22f,
+    )
+}
+
+/** PSP UMD: a chamfered square shell with the printed label and the little disc window at the bottom. */
+private fun CartSpecs.umd(): CartSpec {
+    val outline = roundedPoly(pts(28f, 0f, 208f, 0f, 224f, 16f, 224f, 224f, 208f, 240f, 16f, 240f, 0f, 224f, 0f, 28f), 9f)
+    val window = Path().apply { addOval(Rect(112f - 15f, 205f, 112f + 15f, 235f)) }
+    return CartSpec(
+        w = 224f, h = 240f, outline = outline,
+        label = Rect(14f, 34f, 210f, 192f), labelRadius = 6f, rim = 5f,
+        relief = listOf(
+            Relief(window, raised = false),
+        ),
+        pinsTop = .9f, letteringY = 12f,
+    )
+}
+
+/** An app as a square, Switch-style game card: a notched corner, the app icon on the face and contacts below. */
+private fun CartSpecs.appCard(): CartSpec {
+    val outline = roundedPoly(pts(0f, 0f, 176f, 0f, 208f, 32f, 208f, 232f, 0f, 232f), 13f)
+    val contacts = Path().apply { for (i in 0 until 9) addRect(Rect(40f + i * 14f, 214f, 40f + i * 14f + 8f, 226f)) }
+    return CartSpec(
+        w = 208f, h = 232f, outline = outline,
+        label = Rect(24f, 46f, 184f, 206f), labelRadius = 20f, rim = 6f,
+        relief = listOf(
+            Relief(contacts, raised = false),
+            Relief(rectPath(18f, 14f, 60f, 4f), raised = true),
+            Relief(rectPath(18f, 22f, 44f, 4f), raised = true),
+        ),
+        pinsTop = .94f, letteringY = 14f,
     )
 }
