@@ -42,7 +42,8 @@ If your handheld reports A/B the other way round, flip **Settings > Controls > S
 
 ## Building
 
-Requirements: JDK 17 and the Android SDK (platform 35, build-tools 35).
+Requirements: JDK 17 and the Android SDK (platform 35, build-tools 35). On a new machine, create `local.properties` containing `sdk.dir=/path/to/Android/Sdk`
+(Android Studio does this for you when you open the project).
 
 ```bash
 scripts/fetch-cores.sh          # downloads the arm64 libretro cores into app/src/main/jniLibs
