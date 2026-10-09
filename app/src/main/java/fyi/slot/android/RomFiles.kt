@@ -1,0 +1,40 @@
+package fyi.slot.android
+
+import android.content.Context
+import android.net.Uri
+import fyi.slot.ui.Game
+import java.io.File
+import java.util.zip.ZipInputStream
+
+/** Copies a ROM out of the SAF tree (and out of any zip) into a real file the libretro core can open. */
+object RomFiles {
+    fun materialize(ctx: Context, game: Game): File {
+        val dir = File(ctx.cacheDir, "rom").also { it.mkdirs() }
+        val ext = (game.entryName.ifEmpty { Uri.parse(game.uri).lastPathSegment ?: "" }).substringAfterLast('.', game.system.extensions.first())
+        val out = File(dir, "${game.id}.$ext")
+        // Keep only the most recent couple of ROMs around.
+        dir.listFiles()?.filter { it != out }?.sortedByDescending { it.lastModified() }?.drop(2)?.forEach { it.delete() }
+        if (out.exists() && out.length() > 0 && (game.size == 0L || game.entryName.isNotEmpty() || out.length() == game.size)) return out
+
+        val tmp = File(dir, "${game.id}.tmp")
+        val input = ctx.contentResolver.openInputStream(Uri.parse(game.uri)) ?: error("Can't open ${game.stem}")
+        input.use { raw ->
+            if (game.entryName.isNotEmpty()) {
+                ZipInputStream(raw.buffered()).use { zin ->
+                    while (true) {
+                        val e = zin.nextEntry ?: error("ROM missing from zip")
+                        if (e.name == game.entryName) {
+                            tmp.outputStream().use { zin.copyTo(it) }
+                            break
+                        }
+                    }
+                }
+            } else {
+                tmp.outputStream().use { raw.copyTo(it) }
+            }
+        }
+        out.delete()
+        tmp.renameTo(out)
+        return out
+    }
+}
