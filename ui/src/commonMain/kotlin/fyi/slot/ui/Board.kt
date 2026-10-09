@@ -136,7 +136,7 @@ fun CorePicker(state: SlotState, m: Metrics, assets: CartAssets, screen: Screen.
             Modifier.fillMaxWidth().padding(top = (m.topBar / m.u * .30f).udp()).alpha(flip.value),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SlotText("Choose a core", 20f, bold = true)
+            SlotText(if (game.system.external) "Choose an emulator" else "Choose a core", 20f, bold = true)
             Spacer(Modifier.height(2f.udp()))
             SlotText(game.title, 13f, color = SlotColors.Ink.copy(alpha = .6f))
         }
@@ -152,13 +152,13 @@ fun CorePicker(state: SlotState, m: Metrics, assets: CartAssets, screen: Screen.
             if (state.gamepad) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16f.udp())) {
                     if (game.system.cores.size > 1) Hint("◀▶", "Choose")
-                    Hint("A", "Insert"); Hint("X", "New game"); Hint("B", "Back")
+                    Hint("A", "Insert"); if (!game.system.external) Hint("X", "New game"); Hint("B", "Back")
                 }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(10f.udp())) {
                     TouchButton("Back") { state.closeCorePicker() }
                     TouchButton("Insert") { state.insert(game, true) }
-                    TouchButton("New game") { state.insert(game, false) }
+                    if (!game.system.external) TouchButton("New game") { state.insert(game, false) }
                 }
             }
         }
@@ -172,7 +172,7 @@ fun chipRects(spec: CartSpec, n: Int): List<Rect> {
     val gap = 14f
     val total = n * cw + (n - 1) * gap
     val x0 = (spec.w - total) / 2f
-    val y = spec.h * (if (spec.h > 200f) .56f else .44f)
+    val y = spec.h * (if (spec.disc != null) .66f else if (spec.h > 200f) .56f else .44f)
     return List(n) { Rect(x0 + it * (cw + gap), y, x0 + it * (cw + gap) + cw, y + chh) }
 }
 
@@ -197,6 +197,7 @@ private fun DrawScope.drawBoard(
             Brush.verticalGradient(0f to Color.White.copy(alpha = .20f), .25f to Color.Transparent, 1f to Color.Black.copy(alpha = .35f), startY = 0f, endY = h),
             size = Size(w, h),
         )
+        if (spec.disc != null) drawDiscBack(spec) else {
         // the open cavity
         val cav = Path().apply { addPath(spec.outline) }
         translate(w * (1f - .955f) / 2f, h * (1f - .93f) / 2f) { scale(.955f, .93f, pivot = Offset.Zero) { drawPath(cav, Color.Black.copy(alpha = .55f)) } }
@@ -255,6 +256,7 @@ private fun DrawScope.drawBoard(
         // SMD bits
         for (i in 0 until 5) drawRect(Color(0xFF1B1B1E), Offset(px + 16f + i * 9f, py + 62f), Size(5f, 2.6f))
 
+        }
         // core chips
         val rects = chipRects(spec, game.system.cores.size)
         for ((i, r) in rects.withIndex()) {
@@ -297,4 +299,28 @@ private fun DrawScope.drawChip(r: Rect, body: Color, pins: Int) {
     drawRoundRect(Color.White.copy(alpha = .10f), r.topLeft, Size(r.width, 1.2f), CornerRadius(1f))
     drawCircle(Color(0xFF333336), 1.8f, Offset(r.left + 5f, r.bottom - 5f))
     drawRoundRect(Color.White.copy(alpha = .06f), r.topLeft, r.size, CornerRadius(1.8f), style = Stroke(.8f))
+}
+
+/** The shiny, unprinted underside of a disc: this is what you see when you flip a disc over to pick an emulator. */
+private fun DrawScope.drawDiscBack(spec: CartSpec) {
+    val d = spec.disc ?: return
+    val c = Offset(d.cx, d.cy)
+    drawCircle(
+        Brush.radialGradient(0f to Color(0xFFE8EAF2), .55f to Color(0xFFB9BDCB), 1f to Color(0xFF8E92A3), center = c, radius = d.radius),
+        d.radius, c,
+    )
+    for (r in listOf(.30f, .45f, .60f, .75f, .90f)) drawCircle(Color.Black.copy(alpha = .07f), d.radius * r, c, style = Stroke(1.2f))
+    drawCircle(
+        Brush.sweepGradient(
+            *arrayOf(
+                0.00f to Color(0x66FF6BD6), 0.14f to Color(0x6657E0FF), 0.28f to Color(0x66B8FF6B), 0.42f to Color(0x66FFD86B),
+                0.56f to Color(0x66FF6BD6), 0.70f to Color(0x6657E0FF), 0.84f to Color(0x66B8FF6B), 1.00f to Color(0x66FF6BD6),
+            ),
+            center = c,
+        ),
+        d.radius, c,
+    )
+    drawCircle(Color.White.copy(alpha = .35f), d.hubRadius, c)
+    drawCircle(Color.Black.copy(alpha = .3f), d.hubRadius, c, style = Stroke(1.2f))
+    drawCircle(Color.Black.copy(alpha = .5f), d.holeRadius + 1.5f, c, style = Stroke(2f))
 }

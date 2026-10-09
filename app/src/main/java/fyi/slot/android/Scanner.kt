@@ -15,15 +15,25 @@ import kotlin.coroutines.coroutineContext
 
 /** Walks the SAF folders the user picked and turns ROM files into [Game]s (reading just the header). */
 class Scanner(private val ctx: Context) {
-    private class Found(val docUri: Uri, val name: String, val size: Long, val parentName: String)
+    /** [system] is pre-assigned for games found in a folder named after a system that is run by an external emulator. */
+    private class Found(val docUri: Uri, val name: String, val size: Long, val parentName: String, val system: GameSystem? = null)
+
+    /** Disc images ship as .bin + .cue pairs; only list the .cue. Returns true when [name] should be skipped. */
+    private fun shadowedBin(name: String, cueStems: Set<String>): Boolean =
+        name.substringAfterLast('.', "").lowercase() == "bin" && name.substringBeforeLast('.').lowercase() in cueStems
+
+    /** The system a file belongs to when it sits under a folder like `PSX/` or `N64/`. */
+    private fun assigned(sys: GameSystem?, ext: String): GameSystem? = sys?.takeIf { it.external && ext in it.extensions }
 
     suspend fun scan(roots: List<Uri>, localRoot: java.io.File? = null, onBatch: ((List<Game>) -> Unit)? = null): List<Game> = withContext(Dispatchers.IO) {
         val found = ArrayList<Found>()
         for (root in roots) {
             val rootId = runCatching { DocumentsContract.getTreeDocumentId(root) }.getOrNull() ?: continue
-            walk(root, rootId, "", 0, found)
+            // the picked folder itself may be a system folder, e.g. ".../Games/PSX"
+            val rootName = rootId.substringAfterLast('/').substringAfterLast(':')
+            walk(root, rootId, rootName, 0, found, GameSystem.byFolder(rootName))
         }
-        localRoot?.let { walkLocal(it, 0, found) }
+        localRoot?.let { walkLocal(it, 0, found, null) }
         val seen = HashSet<String>()
         val out = ArrayList<Game>(found.size)
         for (f in found) {
@@ -34,7 +44,7 @@ class Scanner(private val ctx: Context) {
         out
     }
 
-    private suspend fun walk(tree: Uri, docId: String, name: String, depth: Int, out: MutableList<Found>) {
+    private suspend fun walk(tree: Uri, docId: String, name: String, depth: Int, out: MutableList<Found>, sys: GameSystem?) {
         if (depth > 6) return
         val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId)
         val cols = arrayOf(
@@ -42,6 +52,8 @@ class Scanner(private val ctx: Context) {
             DocumentsContract.Document.COLUMN_MIME_TYPE, DocumentsContract.Document.COLUMN_SIZE,
         )
         val dirs = ArrayList<Pair<String, String>>()
+        class Entry(val id: String, val name: String, val size: Long)
+        val files = ArrayList<Entry>()
         ctx.contentResolver.query(children, cols, null, null, null)?.use { c ->
             while (c.moveToNext()) {
                 coroutineContext.ensureActive()
@@ -50,24 +62,33 @@ class Scanner(private val ctx: Context) {
                 val mime = c.getString(2)
                 if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
                     if (!n.startsWith(".") && n.lowercase() !in SKIP_DIRS) dirs += id to n
-                } else {
-                    val ext = n.substringAfterLast('.', "").lowercase()
-                    if (ext == "zip" || GameSystem.byExtension(ext) != null || (ext == "bin" && guessBinSystem(name) != null)) {
-                        out += Found(DocumentsContract.buildDocumentUriUsingTree(tree, id), n, c.getLong(3), name)
-                    }
-                }
+                } else files += Entry(id, n, c.getLong(3))
             }
         }
-        for ((id, n) in dirs) walk(tree, id, n, depth + 1, out)
+        val cueStems = files.filter { it.name.lowercase().endsWith(".cue") }.map { it.name.substringBeforeLast('.').lowercase() }.toSet()
+        for (f in files) {
+            val ext = f.name.substringAfterLast('.', "").lowercase()
+            val s = assigned(sys, ext)
+            if (f.name.startsWith(".")) continue
+            val listed = s != null || ext == "zip" || GameSystem.byExtension(ext) != null || (ext == "bin" && guessBinSystem(name) != null)
+            if (!listed || shadowedBin(f.name, cueStems)) continue
+            out += Found(DocumentsContract.buildDocumentUriUsingTree(tree, f.id), f.name, f.size, name, s)
+        }
+        for ((id, n) in dirs) walk(tree, id, n, depth + 1, out, GameSystem.byFolder(n) ?: sys)
     }
 
-    private fun walkLocal(dir: java.io.File, depth: Int, out: MutableList<Found>) {
+    private fun walkLocal(dir: java.io.File, depth: Int, out: MutableList<Found>, inherited: GameSystem?) {
         if (depth > 6) return
-        for (f in dir.listFiles() ?: return) {
-            if (f.isDirectory) { if (!f.name.startsWith(".")) walkLocal(f, depth + 1, out); continue }
+        val sys = GameSystem.byFolder(dir.name) ?: inherited
+        val all = dir.listFiles() ?: return
+        val cueStems = all.filter { it.extension.lowercase() == "cue" }.map { it.nameWithoutExtension.lowercase() }.toSet()
+        for (f in all) {
+            if (f.isDirectory) { if (!f.name.startsWith(".")) walkLocal(f, depth + 1, out, sys); continue }
+            if (f.name.startsWith(".")) continue
             val ext = f.extension.lowercase()
-            if (ext == "zip" || GameSystem.byExtension(ext) != null || (ext == "bin" && guessBinSystem(dir.name) != null)) {
-                out += Found(Uri.fromFile(f), f.name, f.length(), dir.name)
+            val s = assigned(sys, ext)
+            if ((s != null || ext == "zip" || GameSystem.byExtension(ext) != null || (ext == "bin" && guessBinSystem(dir.name) != null)) && !shadowedBin(f.name, cueStems)) {
+                out += Found(Uri.fromFile(f), f.name, f.length(), dir.name, s)
             }
         }
     }
@@ -80,6 +101,10 @@ class Scanner(private val ctx: Context) {
     private fun toGame(f: Found): Game? {
         val ext = f.name.substringAfterLast('.', "").lowercase()
         val stem = f.name.substringBeforeLast('.')
+        f.system?.let { s ->
+            // run by an external emulator: nothing to read from the file, and zips are passed along untouched
+            return Game(id = s.id + "_" + sha1(f.docUri.toString()).take(12), stem = stem, system = s, uri = f.docUri.toString(), size = f.size)
+        }
         var entry = ""
         var system: GameSystem?
         val header = ByteArray(0x150)
@@ -148,7 +173,7 @@ class Scanner(private val ctx: Context) {
         private val SKIP_DIRS = setOf(
             "labels", "media", "bios", "saves", "states", "images", "boxart", "snaps", "thumbnails", "manuals",
             // systems slot does not emulate: don't waste time opening their (often huge) zip collections
-            "n64", "psx", "ps1", "ps2", "ps3", "psp", "psv", "vita", "gc", "gamecube", "wii", "wiiu", "3ds", "nds", "ds",
+            "ps3", "psp", "psv", "vita", "wii", "wiiu", "3ds", "nds", "ds",
             "dreamcast", "dc", "saturn", "xbox", "windows", "1windows", "pc", "dos", "scummvm", "switch", "gtav", "arcade", "mame", "fbneo",
         )
 

@@ -9,7 +9,7 @@ the contacts, neighbours sliding aside, the screen dimming into the game.
 
 | | |
 |---|---|
-| Systems | GBA, GBC, GB, NES, SNES, Mega Drive/Genesis, Master System, Game Gear, PC Engine |
+| Systems | GBA, GBC, GB, NES, SNES, Mega Drive/Genesis, Master System, Game Gear, PC Engine run inside slot. PlayStation, PS2, N64 and GameCube open your installed emulator |
 | Cores | mGBA, gpSP, Gambatte, FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast (libretro, via [LibretroDroid](https://github.com/Swordfish90/LibretroDroid)) |
 | Input | Gamepad first (handhelds), touch controls and swipe when no controller is connected |
 | Target | Android 8+, arm64 |
@@ -39,6 +39,22 @@ Tested on an Anbernic RG476H (Android 13, 1280x960).
 If your handheld reports A/B the other way round, flip **Settings > Controls > Swap A/B and X/Y**.
 
 **gpSP** needs `gba_bios.bin` in `Android/data/fyi.slot.android/files/system`. Without it slot quietly uses mGBA.
+
+## Systems that open your own emulators
+
+Discs and cartridges slot doesn't emulate itself are launched in the emulator app you already have. Put games in a
+folder named after the system (`PSX`, `PS2`, `N64`, `GC` or `GameCube`) inside the ROM folder you picked.
+
+| System | Emulator it opens | Notes |
+|---|---|---|
+| PlayStation | DuckStation | `.chd`, `.cue` (the `.bin` next to it is hidden), `.pbp`, `.iso` |
+| PlayStation 2 | AetherSX2 | `.iso`, `.chd`, `.cso`, `.cue` |
+| Nintendo 64 | M64Plus FZ (Pro) | `.z64`, `.n64`, `.v64`, and `.zip` straight from the folder |
+| GameCube | Dolphin, or Dolphin MMJR | `.iso`, `.ciso`, `.gcm`, `.rvz`, `.gcz`, `.wbfs` |
+
+Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
+and come back to slot, the disc pops back out of the slot. Cover art for discs is cropped from the libretro box art.
+ArmSX2 can't be told which game to boot, so PS2 games open in AetherSX2.
 
 ## Building
 

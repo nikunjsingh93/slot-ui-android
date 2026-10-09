@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextLayoutResult
@@ -37,6 +38,7 @@ import fyi.slot.ui.res.lettering_gba
 import fyi.slot.ui.res.lettering_gbc
 import org.jetbrains.compose.resources.imageResource
 import kotlin.math.max
+import kotlin.math.min
 
 /** Shared, composition-scoped resources every cart painter needs. */
 @Stable
@@ -116,6 +118,7 @@ class CartPainter private constructor(
 
     /** Paints the cart face with its top-left at the current origin, in design units. */
     fun DrawScope.paint(alpha: Float = 1f) {
+        spec.disc?.let { paintDisc(it, alpha); return }
         paintShadow(alpha)
         val o = spec.outline
         drawPath(o, shell.color, alpha = alpha)
@@ -273,16 +276,105 @@ class CartPainter private constructor(
         }
     }
 
+
+    // --- optical discs ----------------------------------------------------------------------------------
+
+    private fun DrawScope.paintDisc(d: DiscSpec, alpha: Float) {
+        paintShadow(alpha)
+        val o = spec.outline
+        val c = Offset(d.cx, d.cy)
+        drawPath(o, shell.color, alpha = alpha)
+        clipPath(o) {
+            // the reflective data surface seen through the plastic
+            drawCircle(
+                Brush.radialGradient(0f to Color.White.copy(alpha = .10f), 1f to Color.Black.copy(alpha = .28f), center = c, radius = d.radius),
+                d.radius, c, alpha = alpha,
+            )
+            // printed label
+            val label = Path().apply { addOval(Rect(c.x - d.labelRadius, c.y - d.labelRadius, c.x + d.labelRadius, c.y + d.labelRadius)) }
+            clipPath(label) {
+                val side = d.labelRadius * 2f
+                val l = Rect(c.x - d.labelRadius, c.y - d.labelRadius, c.x + d.labelRadius, c.y + d.labelRadius)
+                if (cover != null) {
+                    // PlayStation 1 covers carry a spine down the left edge: crop it away
+                    val trim = if (game.system == GameSystem.PSX) 0.84f else 1f
+                    val srcSide = min(min(cover.width * trim, cover.height * trim), min(cover.width.toFloat(), cover.height.toFloat()))
+                    val sw = srcSide.toInt()
+                    val sh = srcSide.toInt()
+                    drawImage(
+                        cover,
+                        srcOffset = IntOffset(if (game.system == GameSystem.PSX) cover.width - sw else (cover.width - sw) / 2, ((cover.height - sh) * (if (game.system == GameSystem.GC) 0.4f else 0.6f)).toInt()), srcSize = IntSize(sw, sh),
+                        dstOffset = IntOffset(l.left.toInt(), l.top.toInt()), dstSize = IntSize(side.toInt() + 1, side.toInt() + 1),
+                        alpha = alpha,
+                    )
+                } else {
+                    drawRect(lerpColor(labelColor, Color.Black, .35f), l.topLeft, l.size, alpha = alpha)
+                    drawRect(
+                        Brush.verticalGradient(0f to Color.White.copy(alpha = .14f), 1f to Color.Black.copy(alpha = .25f), startY = l.top, endY = l.bottom),
+                        l.topLeft, l.size, alpha = alpha,
+                    )
+                    title?.let { t ->
+                        val top = c.y + d.hubRadius + 6f + ((d.labelRadius - d.hubRadius - 18f) - t.size.height) / 2f
+                        translate(0f, 1.1f) { drawText(t, Color.Black.copy(alpha = .45f * alpha), topLeft = Offset(c.x - t.size.width / 2f, top)) }
+                        drawText(t, Color.White, topLeft = Offset(c.x - t.size.width / 2f, top), alpha = alpha)
+                    }
+                }
+            }
+            drawCircle(Color.Black.copy(alpha = .55f * alpha), d.labelRadius, c, style = Stroke(1.4f))
+            // brand lettering on the rim, above the label
+            val ink = if (lightShell) Color(0xFF2A2A30) else Color.White
+            letterText?.let { t ->
+                val y = c.y - (d.radius + d.labelRadius) / 2f - t.size.height / 2f
+                drawText(t, ink.copy(alpha = .85f), topLeft = Offset(c.x - t.size.width / 2f, y), alpha = alpha)
+            }
+            if (game.system == GameSystem.GC) {
+                // a little tilted cube, standing in for the GameCube mark
+                val cy = c.y + (d.radius + d.labelRadius) / 2f
+                translate(c.x, cy) {
+                    rotate(45f, Offset.Zero) {
+                        drawRect(ink.copy(alpha = .8f * alpha), Offset(-5.5f, -5.5f), Size(11f, 11f), style = Stroke(1.6f))
+                        drawRect(ink.copy(alpha = .8f * alpha), Offset(-2.2f, -2.2f), Size(4.4f, 4.4f))
+                    }
+                }
+            }
+            // clear hub ring and the centre hole's inner shadow
+            drawCircle(Color.White.copy(alpha = .30f * alpha), d.hubRadius, c)
+            drawCircle(Color.Black.copy(alpha = .35f * alpha), d.hubRadius, c, style = Stroke(1.2f))
+            drawCircle(Color.White.copy(alpha = .35f * alpha), d.hubRadius - 4f, c, style = Stroke(1f))
+            drawCircle(Color.Black.copy(alpha = .5f * alpha), d.holeRadius + 1.5f, c, style = Stroke(2f))
+            // light sweeping across the disc
+            drawCircle(
+                Brush.sweepGradient(
+                    *arrayOf(
+                        0.00f to Color.Transparent, 0.10f to Color.White.copy(alpha = .22f), 0.22f to Color.Transparent,
+                        0.50f to Color.Transparent, 0.60f to Color.White.copy(alpha = .20f), 0.72f to Color.Transparent,
+                        1.00f to Color.Transparent,
+                    ),
+                    center = c,
+                ),
+                d.radius, c, alpha = alpha,
+            )
+        }
+        drawPath(o, Color.Black.copy(alpha = .4f * alpha), style = Stroke(width = 1.1f))
+        drawCircle(Color.White.copy(alpha = .18f * alpha), d.radius - 1.2f, c, style = Stroke(1f))
+    }
+
     companion object {
         fun create(assets: CartAssets, game: Game, cover: ImageBitmap?): CartPainter {
             val spec = CartSpecs.of(game)
             val shell = Shells.forGame(game)
             val l = spec.label
             val style = TextStyle(fontFamily = assets.font, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = Color.White)
-            val title = if (cover == null) fitText(
-                assets.measurer, game.title, style,
-                w = l.width - 14f, h = l.height - 22f, maxPx = (l.height / 3.1f).coerceAtMost(30f), minPx = 8f, maxLines = 4,
-            ) else null
+            val disc = spec.disc
+            val title = if (cover == null) {
+                if (disc != null) fitText(
+                    assets.measurer, game.title, style,
+                    w = disc.labelRadius * 1.2f, h = disc.labelRadius - disc.hubRadius - 18f, maxPx = 26f, minPx = 7f, maxLines = 3,
+                ) else fitText(
+                    assets.measurer, game.title, style,
+                    w = l.width - 14f, h = l.height - 22f, maxPx = (l.height / 3.1f).coerceAtMost(30f), minPx = 8f, maxLines = 4,
+                )
+            } else null
             val badge = if (cover == null) assets.measurer.measure(
                 game.system.short, style.copy(fontSize = 8.sp, fontWeight = FontWeight.Bold), density = Unit1,
             ) else null
@@ -294,7 +386,8 @@ class CartPainter private constructor(
             }
             val letterText = if (lettering == null) assets.measurer.measure(
                 game.system.lettering,
-                style.copy(fontSize = (spec.w / 19f).sp, letterSpacing = (spec.w / 110f).sp),
+                if (disc != null) style.copy(fontSize = ((disc.radius - disc.labelRadius) * 0.5f).sp, letterSpacing = 0.5.sp)
+                else style.copy(fontSize = (spec.w / 19f).sp, letterSpacing = (spec.w / 110f).sp),
                 density = Unit1,
             ) else null
             return CartPainter(game, spec, shell, Shells.labelColor(game.title), title, badge, lettering, letterText, cover)

@@ -69,6 +69,10 @@ object Shells {
         CartShape.GENESIS -> sh(0x26262b)
         CartShape.CARD -> if (game.system == GameSystem.GG) sh(0x22222a) else sh(0xb8322a)
         CartShape.HUCARD -> sh(0xe9e6dc)
+        CartShape.N64 -> sh(0x8f8f95)
+        CartShape.DISC_PSX -> sh(0x2a2b31)
+        CartShape.DISC_PS2 -> sh(0x14203f)
+        CartShape.DISC_GC -> sh(0xc4c7d2)
     }
 
     /** FNV-1a hash of the title -> hue, exactly as cart.rs label_colour does. */

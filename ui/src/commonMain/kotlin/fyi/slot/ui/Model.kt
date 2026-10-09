@@ -3,7 +3,7 @@ package fyi.slot.ui
 import androidx.compose.ui.graphics.Color
 
 /** Physical cart silhouette family. */
-enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD }
+enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD, N64, DISC_PSX, DISC_PS2, DISC_GC }
 
 data class CoreChoice(val id: String, val name: String, val tagline: String)
 
@@ -18,6 +18,12 @@ enum class GameSystem(
     val cores: List<CoreChoice>,
     val lettering: String,
     val tint: Color,
+    /** True when the game is handed to an installed emulator app instead of a bundled libretro core. */
+    val external: Boolean = false,
+    /** Folder names (lower case) that mark a ROM directory for this system, for ambiguous extensions like .iso. */
+    val folders: Set<String> = emptySet(),
+    /** Extensions that identify the system on their own, wherever the file lives. */
+    val uniqueExt: Set<String> = extensions,
 ) {
     GBA(
         "gba", "Game Boy Advance", "GBA", CartShape.GBA, setOf("gba"),
@@ -81,11 +87,44 @@ enum class GameSystem(
         "NEC - PC Engine - TurboGrafx 16",
         listOf(CoreChoice("mednafen_pce_fast", "Beetle PCE Fast", "Fast HuCard emulation.")),
         "PC ENGINE", Color(0xFFE08A1E),
+    ),
+    PSX(
+        "psx", "PlayStation", "PSX", CartShape.DISC_PSX, setOf("cue", "chd", "pbp", "iso", "img", "m3u", "bin", "ecm"),
+        "Sony - PlayStation",
+        listOf(CoreChoice("duckstation", "DuckStation", "Opens your installed DuckStation.")),
+        "PlayStation", Color(0xFF9AA0B8),
+        external = true, folders = setOf("psx", "ps1", "playstation", "playstation 1", "psone"), uniqueExt = setOf("pbp"),
+    ),
+    PS2(
+        "ps2", "PlayStation 2", "PS2", CartShape.DISC_PS2, setOf("iso", "chd", "cso", "zso", "cue", "bin", "gz"),
+        "Sony - PlayStation 2",
+        listOf(CoreChoice("aethersx2", "AetherSX2", "Opens your installed AetherSX2.")),
+        "PlayStation 2", Color(0xFF2A4BA0),
+        external = true, folders = setOf("ps2", "playstation 2", "playstation2"), uniqueExt = setOf("cso", "zso"),
+    ),
+    N64(
+        "n64", "Nintendo 64", "N64", CartShape.N64, setOf("z64", "n64", "v64", "zip", "7z", "ndd"),
+        "Nintendo - Nintendo 64",
+        listOf(CoreChoice("mupen64fz", "M64Plus FZ", "Opens your installed M64Plus FZ.")),
+        "NINTENDO 64", Color(0xFF8E8E96),
+        external = true, folders = setOf("n64", "nintendo 64", "nintendo64"), uniqueExt = setOf("z64", "n64", "v64", "ndd"),
+    ),
+    GC(
+        "gc", "GameCube", "GC", CartShape.DISC_GC, setOf("iso", "gcm", "ciso", "gcz", "rvz", "wbfs", "wia", "tgc"),
+        "Nintendo - GameCube",
+        listOf(
+            CoreChoice("dolphin", "Dolphin", "Opens your installed Dolphin."),
+            CoreChoice("dolphin_mmjr", "Dolphin MMJR", "Opens your installed Dolphin MMJR."),
+        ),
+        "GAMECUBE", Color(0xFF6A5ACD),
+        external = true, folders = setOf("gc", "gamecube", "game cube", "ngc", "nintendo gamecube"), uniqueExt = setOf("gcm", "ciso", "gcz", "rvz", "tgc"),
     );
 
     companion object {
         fun byId(id: String) = entries.firstOrNull { it.id == id }
-        fun byExtension(ext: String) = entries.firstOrNull { ext.lowercase() in it.extensions }
+        /** The system a file extension identifies by itself (ambiguous ones like .iso need a folder hint). */
+        fun byExtension(ext: String) = entries.firstOrNull { ext.lowercase() in it.uniqueExt }
+        fun byFolder(name: String) = entries.firstOrNull { name.trim().lowercase() in it.folders }
     }
 }
 

@@ -10,6 +10,9 @@ import kotlin.math.hypot
 /** A raised/recessed feature on the shell, drawn embossed (light up-left, dark down-right). */
 class Relief(val path: Path, val raised: Boolean)
 
+/** A round disc: the label is a circle, with a clear hub ring and a centre hole. */
+class DiscSpec(val cx: Float, val cy: Float, val radius: Float, val labelRadius: Float, val hubRadius: Float, val holeRadius: Float)
+
 /**
  * Cart geometry in "design units". The GB family and GBA use slot's own artwork
  * (crates/slot-ui/assets, GPL-3.0); the other systems are drawn procedurally.
@@ -28,6 +31,7 @@ class CartSpec(
     val pinsTop: Float = 0.9f,
     /** Y range (design units) for the printed lettering line. */
     val letteringY: Float = 12f,
+    val disc: DiscSpec? = null,
 )
 
 private fun svg(d: String, evenOdd: Boolean = false): Path =
@@ -96,6 +100,10 @@ object CartSpecs {
         CartShape.GENESIS -> cache.getOrPut("md") { genesis() }
         CartShape.CARD -> cache.getOrPut(if (game.system == GameSystem.GG) "gg" else "sms") { card(game.system == GameSystem.GG) }
         CartShape.HUCARD -> cache.getOrPut("pce") { hucard() }
+        CartShape.N64 -> cache.getOrPut("n64") { n64() }
+        CartShape.DISC_PSX -> cache.getOrPut("psx") { disc(240f, labelR = 104f, hub = 36f, hole = 13f) }
+        CartShape.DISC_PS2 -> cache.getOrPut("ps2") { disc(240f, labelR = 100f, hub = 38f, hole = 13f) }
+        CartShape.DISC_GC -> cache.getOrPut("gc") { disc(200f, labelR = 82f, hub = 30f, hole = 11f) }
     }
 
     // --- GBA: crates/slot-ui/assets/cart.svg + cart_detail.svg ------------------------------
@@ -261,4 +269,34 @@ object CartSpecs {
             pinsTop = .9f, letteringY = 204f,
         )
     }
+}
+
+private fun CartSpecs.disc(size: Float, labelR: Float, hub: Float, hole: Float): CartSpec {
+    val c = size / 2f
+    val outline = Path().apply {
+        fillType = PathFillType.EvenOdd
+        addOval(Rect(0f, 0f, size, size))
+        addOval(Rect(c - hole, c - hole, c + hole, c + hole))
+    }
+    return CartSpec(
+        w = size, h = size, outline = outline,
+        label = Rect(c - labelR, c - labelR, c + labelR, c + labelR), labelRadius = labelR, rim = 4f,
+        relief = emptyList(), pinsTop = 1f, letteringY = 10f,
+        disc = DiscSpec(c, c, c, labelR, hub, hole),
+    )
+}
+
+private fun CartSpecs.n64(): CartSpec {
+    val outline = roundedPoly(pts(0f, 8f, 8f, 0f, 232f, 0f, 240f, 8f, 240f, 158f, 224f, 172f, 224f, 206f, 16f, 206f, 16f, 172f, 0f, 158f), 6f)
+    val ridges = gripSlots(14f, 12f, 38f, 6.5f, 2.6f, 5, mirrorTo = 226f)
+    return CartSpec(
+        w = 240f, h = 206f, outline = outline,
+        label = Rect(26f, 50f, 214f, 150f), labelRadius = 3f, rim = 6f,
+        relief = listOf(
+            Relief(ridges, raised = true),
+            Relief(rectPath(70f, 160f, 100f, 5f), raised = false),
+            Relief(rectPath(100f, 184f, 40f, 6f), raised = false),
+        ),
+        pinsTop = .9f, letteringY = 22f,
+    )
 }

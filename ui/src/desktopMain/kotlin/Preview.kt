@@ -96,6 +96,7 @@ fun main(args: Array<String>) {
     if (which == "all" || which == "extra") extraShots(out)
     if (which == "all" || which == "device") deviceShots(out)
     if (which == "anim") animShots(out)
+    if (which == "consoles") consoleShots(out)
 
     if (which == "all" || which == "phone") {
         val state = SlotState().apply { setLibrary(library()); selected = 5; gamepad = false }
@@ -203,4 +204,27 @@ fun animShots(out: File) {
     var t = 0
     for (ms in listOf(80, 80, 80, 80, 80, 80, 80, 80)) { s.ms(ms); t += ms; s.snap("c_insert_%03d".format(t)) }
     s.close()
+}
+
+fun consoleShots(out: File) {
+    val games = listOf(
+        sample(GameSystem.PSX, "Final Fantasy VII (USA) (Disc 1)"),
+        sample(GameSystem.PSX, "Disney's Tarzan (USA)"),
+        sample(GameSystem.PS2, "Gran Turismo 4"),
+        sample(GameSystem.PS2, "SSX 3 (USA)"),
+        sample(GameSystem.N64, "Banjo-Kazooie (USA) (Rev 1)"),
+        sample(GameSystem.N64, "AeroGauge (USA)"),
+        sample(GameSystem.GC, "Super Mario Sunshine (USA)"),
+        sample(GameSystem.GC, "Legend of Zelda, The - The Wind Waker (USA)"),
+    )
+    val s = Shoot(out, "consoles", 1500, 800) { fyi.slot.ui.CartGallery(games) }
+    s.snap(); s.close()
+    // with cover art
+    val st = SlotState().apply { setLibrary(games); systemIndex = 2 }
+    st.covers[st.shelf[0].id] = fakeThumb(5)
+    val h = Shoot(out, "consoles_shelf", 1280, 960) { SlotRoot(st) }
+    h.ms(600); h.snap("n64"); st.switchSystem(1); h.ms(600); h.snap("gc")
+    st.switchSystem(-2); st.covers[st.shelf[0].id] = fakeThumb(2); h.ms(600); h.snap("ps2")
+    st.press(Pad.Start); h.ms(1000); h.snap("ps2_picker")
+    h.close()
 }

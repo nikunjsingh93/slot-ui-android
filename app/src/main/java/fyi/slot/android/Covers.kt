@@ -39,7 +39,8 @@ class Covers(private val ctx: Context) {
         if (!allowNetwork) return@withContext null
 
         val bytes = gate.withPermit {
-            fetch(game, "Named_Titles") ?: fetch(game, "Named_Boxarts")
+            if (game.system.external && game.system.shape != fyi.slot.ui.CartShape.N64) fetch(game, "Named_Boxarts") ?: fetch(game, "Named_Titles")
+            else fetch(game, "Named_Titles") ?: fetch(game, "Named_Boxarts")
         }
         if (bytes == null) { miss.writeText("x"); return@withContext null }
         val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: run { miss.writeText("x"); return@withContext null }

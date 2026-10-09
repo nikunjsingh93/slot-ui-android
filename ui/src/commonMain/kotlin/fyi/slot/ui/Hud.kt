@@ -2,6 +2,7 @@ package fyi.slot.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -145,7 +146,7 @@ fun SystemPills(systems: List<GameSystem>, active: Int, onPick: (Int) -> Unit) {
         systems.forEachIndexed { i, s ->
             val on = i == active
             Box(
-                Modifier.height(22f.udp()).clip(RoundedCornerShape(11f.udp()))
+                Modifier.height(26f.udp()).clip(RoundedCornerShape(13f.udp())).clickable { onPick(i) }
                     .background(if (on) SlotColors.Ink else SlotColors.Housing)
                     .padding(horizontal = (if (on) 11f else 8f).udp()),
                 contentAlignment = Alignment.Center,

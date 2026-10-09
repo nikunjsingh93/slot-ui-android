@@ -112,6 +112,11 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     override fun onResume() {
         super.onResume()
+        // coming back from an external emulator counts as ejecting the cart
+        if (externalActive && state.screen == Screen.Playing && android.os.SystemClock.uptimeMillis() - externalAt > 1200) {
+            externalActive = false
+            onGameClosed(android.app.Activity.RESULT_OK)
+        }
         hideSystemBars()
         refreshHud(null)
     }
@@ -207,6 +212,7 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     override fun onLaunch(game: Game, resume: Boolean) {
         Persist.updateMeta(this, game.id, core = game.coreId ?: game.core.id, played = System.currentTimeMillis())
+        if (game.system.external) { launchExternal(game); return }
         val i = Intent(this, GameActivity::class.java)
             .putExtra(GameActivity.EXTRA_ID, game.id).putExtra(GameActivity.EXTRA_STEM, game.stem)
             .putExtra(GameActivity.EXTRA_SYSTEM, game.system.id).putExtra(GameActivity.EXTRA_URI, game.uri)
@@ -216,6 +222,25 @@ class MainActivity : ComponentActivity(), SlotHost {
         playGame.launch(i)
         @Suppress("DEPRECATION")
         overridePendingTransition(0, 0)
+    }
+
+    private var externalActive = false
+    private var externalAt = 0L
+
+    /** Hands the game to the emulator app that owns this system. We know it is over when slot comes back to the front. */
+    private fun launchExternal(game: Game) {
+        when (val r = ExternalLauncher.launch(this, game)) {
+            is ExternalLauncher.Result.Started -> {
+                externalActive = true
+                externalAt = android.os.SystemClock.uptimeMillis()
+                @Suppress("DEPRECATION")
+                overridePendingTransition(0, 0)
+            }
+            is ExternalLauncher.Result.Failed -> {
+                state.ejected()
+                state.toast(r.message)
+            }
+        }
     }
 
     private fun onGameClosed(resultCode: Int) {
