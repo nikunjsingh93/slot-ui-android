@@ -21,7 +21,7 @@ sealed interface Screen {
     data object Ejecting : Screen
 }
 
-enum class Overlay { None, Quick, States, Settings, Library, Eject }
+enum class Overlay { None, Quick, States, Settings, Library, Eject, Drawer }
 
 data class HudState(val batteryPercent: Int = 100, val charging: Boolean = false, val clock: String = "12:00")
 
@@ -46,9 +46,19 @@ data class Settings(
     val swapFaceButtons: Boolean = false,
     val downloadCovers: Boolean = true,
     val brightness: Float = 1f,
+    val cartSize: CartSize = CartSize.Default,
+    val drawerGrid: Boolean = true,
+    val drawerSize: DrawerSize = DrawerSize.Medium,
 )
 
 enum class TouchMode(val label: String) { Auto("When no controller"), Always("Always"), Never("Never") }
+
+/** How big the carts and discs are on the shelf (Settings > Interface). */
+enum class CartSize(val label: String, val factor: Float) {
+    XSmall("Extra small", 0.62f), Small("Small", 0.8f), Default("Default", 1f), Large("Large", 1.15f), XLarge("Extra large", 1.3f),
+}
+
+enum class DrawerSize(val label: String, val icon: Float) { Small("Small", 52f), Medium("Medium", 72f), Large("Large", 96f) }
 
 /** A save-state slot shown in the switcher. */
 data class StateSlot(val slot: Int, val label: String, val thumb: ImageBitmap?, val time: String)
@@ -68,6 +78,9 @@ interface SlotHost {
     /** Every launchable app on the device, for Settings > Apps & games. */
     fun listApps(): List<AppEntry> = emptyList()
     fun onAppKind(pkg: String, kind: AppKind) {}
+    /** The app drawer was opened: load icons for [SlotState.drawerApps] into [SlotState.appIcons]. */
+    fun onDrawerOpen() {}
+    fun onLaunchApp(pkg: String) {}
     fun onAction(action: GameAction) {}
     /** Touch overlay button for the running game. */
     fun onButton(pad: Pad, down: Boolean) {}

@@ -21,7 +21,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-enum class IconKind { Gear, Folder, Close, Back, Play }
+enum class IconKind { Gear, Folder, Close, Back, Play, Grid }
 
 @Composable
 fun IconButton(kind: IconKind, size: Float = 36f, onClick: () -> Unit) {
@@ -62,6 +62,13 @@ fun DrawScope.drawIcon(kind: IconKind, color: Color, u: Float) {
             drawLine(color, Offset(s * .8f, s * .5f), Offset(s * .2f, s * .5f), sw * 1.2f, androidx.compose.ui.graphics.StrokeCap.Round)
             drawLine(color, Offset(s * .45f, s * .22f), Offset(s * .2f, s * .5f), sw * 1.2f, androidx.compose.ui.graphics.StrokeCap.Round)
             drawLine(color, Offset(s * .45f, s * .78f), Offset(s * .2f, s * .5f), sw * 1.2f, androidx.compose.ui.graphics.StrokeCap.Round)
+        }
+        IconKind.Grid -> {
+            val g = s * .38f
+            val gap = s * .12f
+            for (r in 0..1) for (col in 0..1) drawRoundRect(
+                color, Offset(s * .06f + col * (g + gap), s * .06f + r * (g + gap)), Size(g, g), CornerRadius(s * .09f),
+            )
         }
         IconKind.Play -> {
             val p = androidx.compose.ui.graphics.Path().apply {

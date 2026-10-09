@@ -39,7 +39,7 @@ private const val CATCH_OUT = 0.62f
 private const val CREEP = 0.03f
 
 /** Screen geometry. [u] is pixels per slot design unit; slot's native canvas is 640x480. */
-class Metrics(val w: Float, val h: Float) {
+class Metrics(val w: Float, val h: Float, val cartFactor: Float = 1f) {
     val portrait = w < h * 1.05f
     val u: Float = if (portrait) w / 400f else h / 480f
     val cx = w / 2f
@@ -63,18 +63,20 @@ class Metrics(val w: Float, val h: Float) {
     val scoopW = mouthW * 0.88f
     val rim = 2f * u
     val seatedY = bayY + 4f * u
-
-    /** Space the core picker may use. */
+    /** The strip between the top bar and the slot where carts stand; the title sits in the strip below it. */
+    val titleH = 40f * u
     val shelfTop = topBar
-    val availH = bandTop - topBar - 64f * u - 8f * u
+    val shelfBottom = bandTop - titleH
+    val availH = shelfBottom - shelfTop - 8f * u
 
-    /** Slot draws GBA-sized carts 360 units wide and the taller ones a little smaller. */
-    fun cartScale(spec: CartSpec): Float = min(1.5f * u, 340f * u / spec.h).coerceAtMost((w * .92f) / spec.w)
+    /** Slot draws GBA-sized carts 360 units wide and the taller ones a little smaller; Settings > Cart size scales that. */
+    fun cartScale(spec: CartSpec): Float =
+        (min(1.5f * u, 340f * u / spec.h) * cartFactor).coerceAtMost(min((w * .92f) / spec.w, availH / spec.h))
 
-    /** The common baseline (cart foot) for carts of this shape: short ones sit mid-screen, tall ones are centred above the band. */
+    /** The common baseline (cart foot): carts are centred in the strip above the title. */
     fun foot(spec: CartSpec): Float {
         val h0 = spec.h * cartScale(spec)
-        return if (h0 > 211f * u) (bandTop - h0) / 2f + h0 else (h + 211f * u) / 2f
+        return (shelfTop + shelfBottom) / 2f + h0 / 2f
     }
 
     fun scoopDepth(dx: Float): Float = scoopD * (1f - (abs(dx) / (scoopW / 2f)).pow(4f)).coerceAtLeast(0f)

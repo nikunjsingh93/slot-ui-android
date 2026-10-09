@@ -304,17 +304,24 @@ private fun CartSpecs.n64(): CartSpec {
     )
 }
 
-/** PSP UMD: a chamfered square shell with the printed label and the little disc window at the bottom. */
+/**
+ * PSP UMD: a 60 mm disc sealed in a rounded caddy with one cut corner. It is drawn as a disc (printed label,
+ * clear hub) inside a smoky squircle shell, not as a cartridge.
+ */
 private fun CartSpecs.umd(): CartSpec {
-    val outline = roundedPoly(pts(28f, 0f, 208f, 0f, 224f, 16f, 224f, 224f, 208f, 240f, 16f, 240f, 0f, 224f, 0f, 28f), 9f)
-    val window = Path().apply { addOval(Rect(112f - 15f, 205f, 112f + 15f, 235f)) }
+    val s = 232f
+    val c = s / 2f
+    val shell = roundedPoly(pts(40f, 0f, s, 0f, s, s, 0f, s, 0f, 40f), 78f)
+    val outline = Path().apply {
+        fillType = PathFillType.EvenOdd
+        addPath(shell)
+        addOval(Rect(c - 11f, c - 11f, c + 11f, c + 11f))
+    }
     return CartSpec(
-        w = 224f, h = 240f, outline = outline,
-        label = Rect(14f, 34f, 210f, 192f), labelRadius = 6f, rim = 5f,
-        relief = listOf(
-            Relief(window, raised = false),
-        ),
-        pinsTop = .9f, letteringY = 12f,
+        w = s, h = s, outline = outline,
+        label = Rect(c - 92f, c - 92f, c + 92f, c + 92f), labelRadius = 92f, rim = 5f,
+        relief = emptyList(), pinsTop = 1f, letteringY = 10f,
+        disc = DiscSpec(c, c, c - 6f, 92f, 32f, 11f),
     )
 }
 

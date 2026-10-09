@@ -30,11 +30,14 @@ Tested on an Anbernic RG476H (Android 13, 1280x960).
 | Left / Right | browse (hold to speed up) | |
 | Up / Down | jump by letter | |
 | L1 / R1 | switch system | |
+| Y | app drawer | |
 | A | play (tap resumes, hold for a new game) | |
 | START | flip the cart: choose the core | |
 | MENU | settings | pause menu; press twice for save states |
 | L2 / R2 | | rewind / fast-forward (double-tap R2 to lock) |
 | X / Y | | turbo A / B on GB, GBA, NES, SMS/GG, PCE |
+
+On a touchscreen the footer has a **gear** (settings) beside the battery and an **apps** button beside the clock.
 
 If your handheld reports A/B the other way round, flip **Settings > Controls > Swap A/B and X/Y**.
 
@@ -54,7 +57,7 @@ folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`
 | PSP | PPSSPP | `.iso`, `.cso`, `.pbp`, `.chd` |
 | Dreamcast | Redream | `.chd`, `.gdi`, `.cdi`, `.cue` |
 
-Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
+PSP games are UMDs (a rounded caddy with the disc inside). Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
 and come back to slot, the disc pops back out of the slot. Cover art for discs is cropped from the libretro box art.
 ArmSX2 can't be told which game to boot, so PS2 games open in AetherSX2.
 
@@ -67,6 +70,12 @@ Nothing is shown by default. Open **Settings > Apps & games** to see every app o
 tag is shown next to the ones it thinks are games) and set each one to **Hidden**, **App** or **Game**. Apps get an
 **Apps** shelf and games an **Installed** shelf, as square Switch-style cards with the app icon on the face.
 They slide into the slot like any other cart, and coming back to slot ejects them.
+
+### App drawer
+
+Press **Y** (or tap the grid button beside the clock) to open a launcher with every app on the device, as a grid or a
+list. D-pad moves, **A** opens, **X** flips grid/list, **L1/R1** change the icon size. The same options, plus
+**Cart size** (XS, Small, Default, Large, XL), are under **Settings > Interface**.
 
 
 

@@ -96,6 +96,7 @@ fun main(args: Array<String>) {
     if (which == "all" || which == "extra") extraShots(out)
     if (which == "all" || which == "device") deviceShots(out)
     if (which == "anim") animShots(out)
+    if (which == "drawer") drawerShots(out)
     if (which == "apps") appShots(out)
     if (which == "folders") folderCheck()
     if (which == "consoles") consoleShots(out)
@@ -254,4 +255,29 @@ fun appShots(out: File) {
 fun folderCheck() {
     val names = listOf("DC", "dc", "Dreamcast", "Sega Dreamcast (Games)", "SEGA_DC", "PSX", "ps1", "Sony PlayStation", "PlayStation 2", "PS2", "playstation portable", "PSP", "N64", "Nintendo 64", "GameCube", "Game Cube", "NGC", "gc", "GBA", "Game Boy Advance", "Game Boy", "gbc", "SNES", "Super Nintendo", "Mega Drive", "Genesis", "Roms", "Games", "1Windows", "GTAV", "Sega Master System", "TurboGrafx-16", "PC Engine", "FC", "NES")
     for (n in names) println("%-26s -> %s".format(n, GameSystem.byFolder(n)?.id))
+}
+
+fun drawerShots(out: File) {
+    val names = listOf("Calculator", "Calendar", "Chrome", "Clock", "Files", "Gallery", "Maps", "Messages", "Music", "Phone", "Photos", "Settings", "YouTube", "Minecraft", "Genshin Impact", "Winlator", "Moonlight", "Steam Link")
+    val host = object : fyi.slot.ui.SlotHost {
+        override fun listApps() = names.mapIndexed { i, n -> fyi.slot.ui.AppEntry("pkg.$i", n, n in setOf("Minecraft", "Genshin Impact")) }
+    }
+    val st = SlotState(host).apply { setLibrary(library()); selected = 1; openDrawer() }
+    names.indices.forEach { st.appIcons["pkg.$it"] = fakeThumb(it) }
+    val s = Shoot(out, "drawer", 1280, 960) { SlotRoot(st) }
+    s.ms(400); s.snap("grid")
+    st.press(Pad.Down); st.press(Pad.Right); s.ms(200); s.snap("grid_cursor")
+    st.press(Pad.R1); s.ms(300); s.snap("grid_large")
+    st.press(Pad.X); s.ms(300); s.snap("list")
+    s.close()
+
+    val sizes = SlotState().apply { setLibrary(gbaLib + library()); selected = 5 }
+    for (z in fyi.slot.ui.CartSize.entries) {
+        sizes.settings = sizes.settings.copy(cartSize = z)
+        val h = Shoot(out, "size_${z.name}", 1280, 960) { SlotRoot(sizes) }
+        h.ms(500); h.snap(); h.close()
+    }
+    val umd = SlotState().apply { setLibrary(listOf(sample(GameSystem.PSP, "Virtua Tennis - World Tour (USA)"), sample(GameSystem.PSP, "Daxter (USA)"))) }
+    val u = Shoot(out, "umd", 1280, 960) { SlotRoot(umd) }
+    u.ms(500); u.snap(); u.close()
 }

@@ -74,7 +74,7 @@ object Shells {
         CartShape.DISC_PS2 -> sh(0x14203f)
         CartShape.DISC_GC -> sh(0xc4c7d2)
         CartShape.DISC_DC -> sh(0xdfe1e8)
-        CartShape.UMD -> sh(0x6f7482, Finish.Translucent)
+        CartShape.UMD -> sh(0x3b3e48)
         CartShape.APP_CARD -> if (game.system == GameSystem.INSTALLED) sh(0x25262b) else sh(0xe6e8ee)
     }
 

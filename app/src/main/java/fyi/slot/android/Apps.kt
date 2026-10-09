@@ -61,9 +61,8 @@ object Apps {
     }
 
     /** The app's launcher icon, drawn into a bitmap the cart label can show. */
-    fun icon(ctx: Context, pkg: String): ImageBitmap? = runCatching {
+    fun icon(ctx: Context, pkg: String, size: Int = 512): ImageBitmap? = runCatching {
         val d = ctx.packageManager.getApplicationIcon(pkg)
-        val size = 512
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         d.setBounds(0, 0, size, size)

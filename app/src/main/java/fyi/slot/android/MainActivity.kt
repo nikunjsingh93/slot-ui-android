@@ -274,6 +274,23 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     override fun onRescan() = rescan(quiet = false)
 
+    /** The app drawer opened: fetch its icons in the background so the grid fills in as they arrive. */
+    override fun onDrawerOpen() {
+        lifecycleScope.launch {
+            for (app in state.drawerApps) {
+                if (state.appIcons.containsKey(app.pkg)) continue
+                val icon = withContext(Dispatchers.IO) { Apps.icon(this@MainActivity, app.pkg, 192) } ?: continue
+                state.appIcons[app.pkg] = icon
+            }
+        }
+    }
+
+    override fun onLaunchApp(pkg: String) {
+        val intent = packageManager.getLaunchIntentForPackage(pkg)
+        if (intent == null) { state.toast("That app can't be opened"); return }
+        runCatching { startActivity(intent) }.onFailure { state.toast("That app wouldn't open") }
+    }
+
     override fun listApps(): List<fyi.slot.ui.AppEntry> = Apps.list(this)
 
     override fun onAppKind(pkg: String, kind: fyi.slot.ui.AppKind) {

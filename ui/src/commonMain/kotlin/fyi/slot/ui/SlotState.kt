@@ -31,6 +31,13 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     /** Which installed apps are shown, and as what. Anything missing is hidden. */
     val appKinds = mutableStateMapOf<String, AppKind>()
 
+    // App drawer (Y on the shelf)
+    var drawerApps by mutableStateOf<List<AppEntry>>(emptyList())
+    val appIcons = mutableStateMapOf<String, ImageBitmap>()
+    var drawerCursor by mutableIntStateOf(0)
+    /** Columns of the grid as laid out on screen, so Up/Down can jump a row. */
+    var drawerCols by mutableIntStateOf(1)
+
     /** Monotonic counter bumped on every move; lets the shelf play a tick without diffing. */
     var moveTick by mutableIntStateOf(0)
 
@@ -286,7 +293,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                 Pad.Down -> if (!repeat) skipLetter(+1)
                 Pad.L1 -> if (!repeat) switchSystem(-1)
                 Pad.R1 -> if (!repeat) switchSystem(+1)
-                Pad.Start, Pad.Y -> openCorePicker()
+                Pad.Start -> openCorePicker()
+                Pad.Y -> openDrawer()
                 Pad.Menu, Pad.Select -> openSettings()
                 Pad.A -> if (!repeat) {
                     if (current != null) { aDown = true; aHold = 0f } else if (games.isEmpty()) host.onPickLibrary()
@@ -351,6 +359,49 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         pushMenu(buildSettingsMenu())
         overlay = Overlay.Settings
         host.sfx(Sfx.Select)
+    }
+
+    fun openDrawer() {
+        drawerApps = host.listApps()
+        drawerCursor = 0
+        overlay = Overlay.Drawer
+        host.onDrawerOpen()
+        host.sfx(Sfx.Select)
+    }
+
+    fun launchDrawerApp(index: Int = drawerCursor) {
+        val app = drawerApps.getOrNull(index) ?: return
+        overlay = Overlay.None
+        host.onLaunchApp(app.pkg)
+    }
+
+    private fun updateDrawerSettings(f: (Settings) -> Settings) {
+        settings = f(settings)
+        host.onSettingsChanged(settings)
+    }
+
+    fun toggleDrawerLayout() = updateDrawerSettings { it.copy(drawerGrid = !it.drawerGrid) }
+
+    fun stepDrawerSize(dir: Int) = updateDrawerSettings {
+        val n = DrawerSize.entries.size
+        it.copy(drawerSize = DrawerSize.entries[(it.drawerSize.ordinal + dir).coerceIn(0, n - 1)])
+    }
+
+    private fun drawerPress(pad: Pad, repeat: Boolean) {
+        val n = drawerApps.size
+        val step = if (settings.drawerGrid) drawerCols.coerceAtLeast(1) else 1
+        fun go(by: Int) { if (n > 0) { drawerCursor = (drawerCursor + by).coerceIn(0, n - 1); host.sfx(Sfx.Tick) } }
+        when (pad) {
+            Pad.Left -> if (settings.drawerGrid) go(-1) else stepDrawerSize(-1)
+            Pad.Right -> if (settings.drawerGrid) go(+1) else stepDrawerSize(+1)
+            Pad.Up -> go(-step)
+            Pad.Down -> go(+step)
+            Pad.A -> if (!repeat) launchDrawerApp()
+            Pad.X -> if (!repeat) toggleDrawerLayout()
+            Pad.L1, Pad.L2 -> if (!repeat) stepDrawerSize(-1)
+            Pad.R1, Pad.R2 -> if (!repeat) stepDrawerSize(+1)
+            Pad.B, Pad.Y, Pad.Menu, Pad.Start, Pad.Select -> if (!repeat) closeOverlay()
+        }
     }
 
     fun openStates() {
@@ -431,6 +482,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                 else -> {}
             }
             Overlay.States -> statesPress(pad, repeat)
+            Overlay.Drawer -> drawerPress(pad, repeat)
             else -> {}
         }
     }

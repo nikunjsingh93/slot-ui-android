@@ -53,6 +53,7 @@ fun Menus(state: SlotState, m: Metrics, gameProcess: Boolean = false) {
         when (state.overlay) {
             Overlay.Quick, Overlay.Settings -> MenuScrim(state, m)
             Overlay.States -> StateSwitcher(state, m)
+            Overlay.Drawer -> AppDrawer(state, m)
             else -> {}
         }
     }

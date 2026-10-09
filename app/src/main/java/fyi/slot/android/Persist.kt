@@ -49,6 +49,9 @@ object Persist {
                 sounds = o.optBoolean("sounds", d.sounds),
                 swapFaceButtons = o.optBoolean("swapFaceButtons", d.swapFaceButtons),
                 downloadCovers = o.optBoolean("downloadCovers", d.downloadCovers),
+                cartSize = enumOf("cartSize", fyi.slot.ui.CartSize.entries.toTypedArray(), d.cartSize),
+                drawerGrid = o.optBoolean("drawerGrid", d.drawerGrid),
+                drawerSize = enumOf("drawerSize", fyi.slot.ui.DrawerSize.entries.toTypedArray(), d.drawerSize),
                 brightness = o.optDouble("brightness", d.brightness.toDouble()).toFloat(),
             )
         }.getOrDefault(Settings())
@@ -63,6 +66,7 @@ object Persist {
             .put("autoSaveOnEject", s.autoSaveOnEject).put("showTouchControls", s.showTouchControls.name)
             .put("sounds", s.sounds).put("swapFaceButtons", s.swapFaceButtons)
             .put("downloadCovers", s.downloadCovers).put("brightness", s.brightness.toDouble())
+            .put("cartSize", s.cartSize.name).put("drawerGrid", s.drawerGrid).put("drawerSize", s.drawerSize.name)
         writeAtomic(file(ctx, "settings.json"), o.toString())
     }
 

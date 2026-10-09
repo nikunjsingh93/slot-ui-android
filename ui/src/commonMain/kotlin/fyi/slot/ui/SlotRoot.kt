@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -70,7 +71,7 @@ fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boole
     BoxWithConstraints(modifier.fillMaxSize()) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
-        val m = remember(w, h) { Metrics(w, h) }
+        val m = remember(w, h, state.settings.cartSize) { Metrics(w, h, state.settings.cartSize.factor) }
         CompositionLocalProvider(LocalU provides m.u) {
             val assets = rememberCartAssets()
             if (!gameProcess) Browser(state, m, assets)
@@ -293,15 +294,13 @@ private fun TopBar(state: SlotState, m: Metrics) {
     }
 }
 
-/** The game's name sits in the curved basin of the slot, exactly where slot prints it. */
+/** The game's name, just above the slot and below the carts, so it never hides the slot itself. */
 @Composable
 private fun BasinTitle(state: SlotState, m: Metrics) {
     val g = state.current ?: return
-    val holeTop = m.slitY
-    val holeH = m.scoopY + m.scoopD - m.slitY
-    val textH = 24f * m.u
+    val textH = m.titleH
     Box(
-        Modifier.fillMaxWidth().height(textH.pxToDp()).offset { IntOffset(0, (holeTop + (holeH - textH) / 2f).roundToInt()) },
+        Modifier.fillMaxWidth().height(textH.pxToDp()).offset { IntOffset(0, m.shelfBottom.roundToInt()) },
         contentAlignment = Alignment.Center,
     ) {
         val holding = state.aDown && state.aHold > 180f
@@ -352,19 +351,23 @@ private fun EmptyNote(state: SlotState, m: Metrics) {
 @Composable
 private fun Footer(state: SlotState, m: Metrics) {
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.align(Alignment.BottomStart).padding(start = 24f.udp()).height(m.bandH.pxToDp()), contentAlignment = Alignment.CenterStart) {
+        // left: battery, then the settings button (what SELECT does on a controller)
+        Row(
+            Modifier.align(Alignment.BottomStart).padding(start = 22f.udp()).height(m.bandH.pxToDp()),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             BatteryGauge(state.hud)
+            Spacer(Modifier.width(12f.udp()))
+            IconButton(IconKind.Gear, 32f) { state.openSettings() }
         }
-        Box(Modifier.align(Alignment.BottomEnd).padding(end = 24f.udp()).height(m.bandH.pxToDp()), contentAlignment = Alignment.CenterEnd) {
+        // right: the app drawer button (Y), then the clock
+        Row(
+            Modifier.align(Alignment.BottomEnd).padding(end = 22f.udp()).height(m.bandH.pxToDp()),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(IconKind.Grid, 32f) { state.openDrawer() }
+            Spacer(Modifier.width(12f.udp()))
             SlotText(state.hud.clock, 14f, color = SlotColors.Ink.copy(alpha = .8f))
-        }
-        if (!state.gamepad) {
-            Box(Modifier.align(Alignment.BottomStart).padding(start = 120f.udp()).height(m.bandH.pxToDp()), contentAlignment = Alignment.CenterStart) {
-                IconButton(IconKind.Gear, 30f) { state.openSettings() }
-            }
-            Box(Modifier.align(Alignment.BottomEnd).padding(end = 120f.udp()).height(m.bandH.pxToDp()), contentAlignment = Alignment.CenterEnd) {
-                IconButton(IconKind.Folder, 30f) { state.host.onPickLibrary() }
-            }
         }
     }
 }

@@ -103,6 +103,7 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
         MenuSub("Screen") { screenPage(null) },
         MenuSub("Gameplay") { gameplayPage() },
         MenuSub("Controls") { controlsPage() },
+        MenuSub("Interface") { interfacePage() },
         MenuSub("Apps & games") { appsPage() },
         MenuSub("Button guide") {
             MenuPage("Button guide", listOf(
@@ -111,6 +112,7 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
                 MenuInfo("L1 / R1", "Switch system"),
                 MenuInfo("A", "Play (hold for a new game)"),
                 MenuInfo("START", "Pick the core"),
+                MenuInfo("Y", "App drawer"),
                 MenuInfo("MENU", "Settings / pause menu"),
                 MenuInfo("MENU twice", "Save states"),
                 MenuInfo("L2 / R2 in game", "Rewind / fast-forward"),
@@ -141,3 +143,18 @@ private fun SlotState.appsPage(): MenuPage {
     val items: List<MenuItem> = if (rows.isEmpty()) listOf(MenuInfo("No apps found")) else rows
     return MenuPage("Apps & games", items, subtitle = "Choose where each one shows")
 }
+
+private fun SlotState.interfacePage(): MenuPage = MenuPage(
+    "Interface",
+    listOf(
+        MenuChoice("Cart size", CartSize.entries.map { it.label }, { settings.cartSize.ordinal }) { i ->
+            update { it.copy(cartSize = CartSize.entries[i]) }
+        },
+        MenuChoice("App drawer layout", listOf("Grid", "List"), { if (settings.drawerGrid) 0 else 1 }) { i ->
+            update { it.copy(drawerGrid = i == 0) }
+        },
+        MenuChoice("App drawer size", DrawerSize.entries.map { it.label }, { settings.drawerSize.ordinal }) { i ->
+            update { it.copy(drawerSize = DrawerSize.entries[i]) }
+        },
+    ),
+)
