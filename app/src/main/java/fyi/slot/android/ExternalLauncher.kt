@@ -14,38 +14,45 @@ import java.io.File
  * were verified on a real handheld.
  */
 object ExternalLauncher {
-    private class Emulator(val core: String, val pkg: String, val label: String, val build: (Game, String) -> Intent)
+    private class Emulator(val core: String, val pkg: String, val label: String, val build: (Game, String, Uri) -> Intent)
 
     private val emulators = listOf(
         // DuckStation: its (exported) EmulationActivity takes the path in "bootPath"
-        Emulator("duckstation", "com.github.stenzek.duckstation", "DuckStation") { _, path ->
-            Intent().setClassName("com.github.stenzek.duckstation", "com.github.stenzek.duckstation.EmulationActivity").putExtra("bootPath", path)
+        Emulator("duckstation", "com.github.stenzek.duckstation", "DuckStation") { _, path, uri ->
+            Intent().setClassName("com.github.stenzek.duckstation", "com.github.stenzek.duckstation.EmulationActivity").putExtra("bootPath", uri.toString()).grant(uri)
         },
         // AetherSX2: same interface
-        Emulator("aethersx2", "xyz.aethersx2.android", "AetherSX2") { _, path ->
-            Intent().setClassName("xyz.aethersx2.android", "xyz.aethersx2.android.EmulationActivity").putExtra("bootPath", path)
+        Emulator("aethersx2", "xyz.aethersx2.android", "AetherSX2") { _, path, uri ->
+            Intent().setClassName("xyz.aethersx2.android", "xyz.aethersx2.android.EmulationActivity").putExtra("bootPath", uri.toString()).grant(uri)
         },
         // M64Plus FZ: an "open this file" request, zips and all
-        Emulator("mupen64fz", "org.mupen64plusae.v3.fzurita.pro", "M64Plus FZ Pro") { _, path ->
+        Emulator("mupen64fz", "org.mupen64plusae.v3.fzurita.pro", "M64Plus FZ Pro") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.fromFile(File(path)))
                 .setClassName("org.mupen64plusae.v3.fzurita.pro", "paulscode.android.mupen64plusae.SplashActivity")
         },
         // Dolphin: an "open this file" request whose data is the plain path
-        Emulator("dolphin", "org.dolphinemu.dolphinemu", "Dolphin") { _, path ->
+        Emulator("dolphin", "org.dolphinemu.dolphinemu", "Dolphin") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.dolphinemu", "org.dolphinemu.dolphinemu.ui.main.MainActivity")
         },
-        Emulator("dolphin_mmjr", "org.dolphinemu.mmjr", "Dolphin MMJR") { _, path ->
+        Emulator("dolphin_mmjr", "org.dolphinemu.mmjr", "Dolphin MMJR") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.mmjr", "org.dolphinemu.dolphinemu.ui.main.MainActivity")
         },
         // PPSSPP: an "open this file" request with the plain path
-        Emulator("ppsspp", "org.ppsspp.ppsspp", "PPSSPP") { _, path ->
+        Emulator("ppsspp", "org.ppsspp.ppsspp", "PPSSPP") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.ppsspp.ppsspp", "org.ppsspp.ppsspp.PpssppActivity")
         },
         // Redream: same, it opens whatever string it is given as a path
-        Emulator("redream", "io.recompiled.redream", "Redream") { _, path ->
+        Emulator("redream", "io.recompiled.redream", "Redream") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("io.recompiled.redream", "io.recompiled.redream.MainActivity")
         },
     )
+
+    /** Lets the emulator read this document through the storage access framework, as the folder you picked allows slot to. */
+    private fun Intent.grant(uri: Uri): Intent = apply {
+        data = uri
+        clipData = android.content.ClipData.newRawUri("game", uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+    }
 
     sealed interface Result {
         data class Started(val label: String) : Result
@@ -83,7 +90,7 @@ object ExternalLauncher {
             val emu = emulators.firstOrNull { it.core == c.id } ?: continue
             if (!isInstalled(ctx, emu.pkg)) continue
             return runCatching {
-                ctx.startActivity(emu.build(game, path))
+                ctx.startActivity(emu.build(game, path, Uri.parse(game.uri)))
                 Result.Started(emu.label)
             }.getOrElse { Result.Failed("${emu.label} wouldn't open ${game.title}") }
         }
