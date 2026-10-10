@@ -5,6 +5,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import fyi.slot.ui.CartGallery
+import fyi.slot.ui.CoverMatch
 import fyi.slot.ui.Game
 import fyi.slot.ui.GameSystem
 import fyi.slot.ui.Pad
@@ -99,6 +100,7 @@ fun main(args: Array<String>) {
     if (which == "drawer") drawerShots(out)
     if (which == "apps") appShots(out)
     if (which == "folders") folderCheck()
+    if (which == "covermatch") coverMatchCheck(out)
     if (which == "consoles") consoleShots(out)
 
     if (which == "all" || which == "phone") {
@@ -280,4 +282,19 @@ fun drawerShots(out: File) {
     val umd = SlotState().apply { setLibrary(listOf(sample(GameSystem.PSP, "Virtua Tennis - World Tour (USA)"), sample(GameSystem.PSP, "Daxter (USA)"))) }
     val u = Shoot(out, "umd", 1280, 960) { SlotRoot(umd) }
     u.ms(500); u.snap(); u.close()
+}
+
+/** Runs the cover matcher against directory listings saved as `<out>/<n>.html` (curl of the libretro Named_Boxarts index). */
+fun coverMatchCheck(out: File) {
+    val cases = mapOf(
+        "dc" to listOf("Virtua Tennis - Sega Professional Tennis (USA)", "Crazy Taxi 2 (USA)", "SoulCalibur (USA)"),
+        "n64" to listOf("Wave Race 64 (USA) (Rev A)", "Wave Race 64", "Wave Race", "1080 Snowboarding (Japan, USA) (En,Ja)", "Bug s Life, A (USA)", "Banjo-Kazooie (USA) (Rev 1)", "RR64 - Ridge Racer 64 (USA)"),
+        "ps2" to listOf("Gran Turismo 4", "SSX 3 (USA)", "WRC - Rally Evolved (Europe, Australia) (En,Fr,De,Es,It,Pt,No,Fi) (v2.00)", "Tom and Jerry in War of the Whiskers (USA) (En,Es)"),
+        "psp" to listOf("Virtua Tennis - World Tour (USA)"),
+    )
+    for ((n, stems) in cases) {
+        val names = CoverMatch.parseListing(File(out, "$n.html").readText())
+        println("$n: ${names.size} names")
+        for (s in stems) println("   $s  ->  ${CoverMatch.best(s, names)}")
+    }
 }

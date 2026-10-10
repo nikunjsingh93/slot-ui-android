@@ -304,14 +304,28 @@ private fun CartSpecs.n64(): CartSpec {
     )
 }
 
+/** A caddy outline with big round top corners (it hugs the disc) and nearly square bottom ones, like a real UMD. */
+private fun umdShell(w: Float, h: Float, top: Float, bottom: Float): Path = Path().apply {
+    moveTo(top, 0f)
+    lineTo(w - top, 0f)
+    arcTo(Rect(w - 2 * top, 0f, w, 2 * top), -90f, 90f, false)
+    lineTo(w, h - bottom)
+    arcTo(Rect(w - 2 * bottom, h - 2 * bottom, w, h), 0f, 90f, false)
+    lineTo(bottom, h)
+    arcTo(Rect(0f, h - 2 * bottom, 2 * bottom, h), 90f, 90f, false)
+    lineTo(0f, top)
+    arcTo(Rect(0f, 0f, 2 * top, 2 * top), 180f, 90f, false)
+    close()
+}
+
 /**
- * PSP UMD: a 60 mm disc sealed in a rounded caddy with one cut corner. It is drawn as a disc (printed label,
- * clear hub) inside a smoky squircle shell, not as a cartridge.
+ * PSP UMD: a 60 mm disc sealed in a caddy that is round on top and square at the bottom. It is drawn as a disc
+ * (printed label, clear hub) inside a smoky shell, not as a cartridge.
  */
 private fun CartSpecs.umd(): CartSpec {
     val s = 232f
     val c = s / 2f
-    val shell = roundedPoly(pts(40f, 0f, s, 0f, s, s, 0f, s, 0f, 40f), 78f)
+    val shell = umdShell(s, s, 104f, 9f)
     val outline = Path().apply {
         fillType = PathFillType.EvenOdd
         addPath(shell)

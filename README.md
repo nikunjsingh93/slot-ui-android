@@ -21,7 +21,8 @@ Tested on an Anbernic RG476H (Android 13, 1280x960).
 1. Install the APK. On a handheld you can also pick **slot.** as your home app.
 2. Press **A** on the empty shelf (or tap it) and choose your ROM folder. ROMs may be loose files or `.zip`s.
    Alternatively drop ROMs into `Android/data/fyi.slot.android/files/roms` and no permission is needed.
-3. Cart art is a title screen fetched from the libretro thumbnail server and cached. Put your own
+3. Cart art is fetched once and cached: first from the libretro thumbnail server (file names are matched loosely, so
+   `Gran Turismo 4.iso` still finds `Gran Turismo 4 (USA)`), then from the game's Wikipedia page. Put your own
    `<rom name>.png` into `Android/data/fyi.slot.android/files/labels` to override it (turn the download off in
    Settings > Library if you prefer).
 
