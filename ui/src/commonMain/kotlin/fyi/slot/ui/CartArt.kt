@@ -283,7 +283,7 @@ class CartPainter private constructor(
         paintShadow(alpha)
         val o = spec.outline
         val c = Offset(d.cx, d.cy)
-        drawPath(o, shell.color, alpha = alpha)
+        drawPath(o, if (d.rimText) shell.color else Color(0xFFD7D9E0), alpha = alpha)
         clipPath(o) {
             // the reflective data surface seen through the plastic
             drawCircle(
@@ -320,14 +320,14 @@ class CartPainter private constructor(
                     }
                 }
             }
-            drawCircle(Color.Black.copy(alpha = .55f * alpha), d.labelRadius, c, style = Stroke(1.4f))
+            drawCircle(Color.Black.copy(alpha = (if (d.rimText) .55f else .18f) * alpha), d.labelRadius, c, style = Stroke(if (d.rimText) 1.4f else 0.9f))
             // brand lettering on the rim, above the label
             val ink = if (game.system == GameSystem.DC) Color(0xFFE8631A) else if (lightShell) Color(0xFF2A2A30) else Color.White
-            letterText?.let { t ->
+            letterText?.takeIf { d.rimText }?.let { t ->
                 val y = c.y - (d.radius + d.labelRadius) / 2f - t.size.height / 2f
                 drawText(t, ink.copy(alpha = .85f), topLeft = Offset(c.x - t.size.width / 2f, y), alpha = alpha)
             }
-            if (game.system == GameSystem.GC) {
+            if (d.rimText && game.system == GameSystem.GC) {
                 // a little tilted cube, standing in for the GameCube mark
                 val cy = c.y + (d.radius + d.labelRadius) / 2f
                 translate(c.x, cy) {

@@ -11,7 +11,7 @@ import kotlin.math.hypot
 class Relief(val path: Path, val raised: Boolean)
 
 /** A round disc: the label is a circle, with a clear hub ring and a centre hole. */
-class DiscSpec(val cx: Float, val cy: Float, val radius: Float, val labelRadius: Float, val hubRadius: Float, val holeRadius: Float)
+class DiscSpec(val cx: Float, val cy: Float, val radius: Float, val labelRadius: Float, val hubRadius: Float, val holeRadius: Float, val rimText: Boolean = false)
 
 /**
  * Cart geometry in "design units". The GB family and GBA use slot's own artwork
@@ -101,10 +101,10 @@ object CartSpecs {
         CartShape.CARD -> cache.getOrPut(if (game.system == GameSystem.GG) "gg" else "sms") { card(game.system == GameSystem.GG) }
         CartShape.HUCARD -> cache.getOrPut("pce") { hucard() }
         CartShape.N64 -> cache.getOrPut("n64") { n64() }
-        CartShape.DISC_PSX -> cache.getOrPut("psx") { disc(240f, labelR = 104f, hub = 36f, hole = 13f) }
-        CartShape.DISC_PS2 -> cache.getOrPut("ps2") { disc(240f, labelR = 100f, hub = 38f, hole = 13f) }
-        CartShape.DISC_GC -> cache.getOrPut("gc") { disc(200f, labelR = 82f, hub = 30f, hole = 11f) }
-        CartShape.DISC_DC -> cache.getOrPut("dc") { disc(240f, labelR = 100f, hub = 36f, hole = 13f) }
+        CartShape.DISC_PSX -> cache.getOrPut("psx") { disc(240f, labelR = 116f, hub = 36f, hole = 13f) }
+        CartShape.DISC_PS2 -> cache.getOrPut("ps2") { disc(240f, labelR = 116f, hub = 38f, hole = 13f) }
+        CartShape.DISC_GC -> cache.getOrPut("gc") { disc(200f, labelR = 96f, hub = 30f, hole = 11f) }
+        CartShape.DISC_DC -> cache.getOrPut("dc") { disc(240f, labelR = 116f, hub = 36f, hole = 13f) }
         CartShape.UMD -> cache.getOrPut("umd") { umd() }
         CartShape.APP_CARD -> cache.getOrPut("app") { appCard() }
     }
@@ -335,7 +335,7 @@ private fun CartSpecs.umd(): CartSpec {
         w = s, h = s, outline = outline,
         label = Rect(c - 92f, c - 92f, c + 92f, c + 92f), labelRadius = 92f, rim = 5f,
         relief = emptyList(), pinsTop = 1f, letteringY = 10f,
-        disc = DiscSpec(c, c, c - 6f, 92f, 32f, 11f),
+        disc = DiscSpec(c, c, c - 6f, 92f, 32f, 11f, rimText = true),
     )
 }
 
