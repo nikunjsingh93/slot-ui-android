@@ -34,8 +34,8 @@ class Covers(private val ctx: Context) {
     private val indexDir = File(cache, "index").also { it.mkdirs() }
     private val custom = File(ctx.getExternalFilesDir(null), "labels").also { it.mkdirs() }
     private val gate = Semaphore(3)
-    private val indexLock = Any()
-    private val indexes = HashMap<String, List<String>>()
+    private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>()
+    private val indexes = java.util.concurrent.ConcurrentHashMap<String, CoverMatch.Index>()
 
     suspend fun load(game: Game, allowNetwork: Boolean): ImageBitmap? = withContext(Dispatchers.IO) {
         if (Apps.isApp(game)) return@withContext Apps.icon(ctx, Apps.packageOf(game))
@@ -98,18 +98,20 @@ class Covers(private val ctx: Context) {
         return null
     }
 
-    /** The server's file list for one set, cached for a month. Loaders share one download rather than each fetching the list. */
-    private fun index(dir: String, kind: String): List<String> = synchronized(indexLock) {
+    /** The server's file list for one set, parsed once and cached on disk for a month. Each set has its own lock, so a big download doesn't hold up the other shelves. */
+    private fun index(dir: String, kind: String): CoverMatch.Index {
         val key = "$dir/$kind"
         indexes[key]?.let { return it }
-        val f = File(indexDir, key.replace(Regex("[^A-Za-z0-9]+"), "_") + ".txt")
-        val fresh = f.exists() && System.currentTimeMillis() - f.lastModified() < INDEX_MS
-        val got = if (fresh) f.readLines() else {
-            val parsed = getText("https://thumbnails.libretro.com/${enc(dir)}/$kind/")?.let(CoverMatch::parseListing).orEmpty()
-            if (parsed.isNotEmpty()) { f.writeText(parsed.joinToString("\n")); parsed } else if (f.exists()) f.readLines() else emptyList()
+        synchronized(locks.getOrPut(key) { Any() }) {
+            indexes[key]?.let { return it }
+            val f = File(indexDir, key.replace(NOT_ALNUM, "_") + ".txt")
+            val fresh = f.exists() && System.currentTimeMillis() - f.lastModified() < INDEX_MS
+            val got = if (fresh) f.readLines() else {
+                val parsed = getText("https://thumbnails.libretro.com/${enc(dir)}/$kind/")?.let(CoverMatch::parseListing).orEmpty()
+                if (parsed.isNotEmpty()) { f.writeText(parsed.joinToString("\n")); parsed } else if (f.exists()) f.readLines() else emptyList()
+            }
+            return CoverMatch.Index(got).also { if (got.isNotEmpty()) indexes[key] = it }
         }
-        if (got.isNotEmpty()) indexes[key] = got
-        got
     }
 
     // --- Wikipedia -----------------------------------------------------------------------------------
@@ -160,7 +162,9 @@ class Covers(private val ctx: Context) {
 
     private fun getText(url: String): String? = request(url)?.toString(Charsets.UTF_8)
 
-    private fun request(url: String): ByteArray? = try {
+    private fun request(url: String): ByteArray? = fetch(url)
+
+    private fun fetch(url: String): ByteArray? = try {
         (URL(url).openConnection() as HttpURLConnection).run {
             connectTimeout = 8000; readTimeout = 15000
             setRequestProperty("User-Agent", "slot-android/0.1 (https://github.com/nikunjsingh93/slot-ui-android)")
@@ -174,6 +178,7 @@ class Covers(private val ctx: Context) {
 
     companion object {
         private const val MAX_W = 640
+        private val NOT_ALNUM = Regex("[^A-Za-z0-9]+")
         private const val RETRY_MS = 7L * 24 * 3600 * 1000
         private const val INDEX_MS = 30L * 24 * 3600 * 1000
     }
