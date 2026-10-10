@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,12 +98,29 @@ fun MenuPanel(state: SlotState, m: Metrics, page: MenuPage, cursor: Int) {
     val rowH = 36f
     val maxRows = ((m.h / m.u - 150f) / rowH).toInt().coerceIn(4, 9)
     val n = page.items.size
-    val first = (cursor - maxRows / 2).coerceIn(0, (n - maxRows).coerceAtLeast(0))
+    // Touch scrolling moves the window of rows on its own; moving the cursor (D-pad) brings it back to the cursor.
+    var dragged by remember(page) { mutableStateOf<Int?>(null) }
+    LaunchedEffect(cursor) { dragged = null }
+    val first = dragged ?: (cursor - maxRows / 2).coerceIn(0, (n - maxRows).coerceAtLeast(0))
+    val shownFirst by rememberUpdatedState(first)
     val shown = page.items.subList(first, (first + maxRows).coerceAtMost(n))
     Column(
         Modifier.width(panelW.udp()).clip(RoundedCornerShape(14f.udp())).background(SlotColors.Housing)
             .border(1.2f.udp(), SlotColors.Edge, RoundedCornerShape(14f.udp()))
-            .pointerInput(Unit) { detectTapGestures { } }.padding(vertical = 10f.udp()),
+            .pointerInput(Unit) { detectTapGestures { } }
+            .pointerInput(page, n, maxRows) {
+                var acc = 0f
+                val rowPx = rowH * m.u
+                detectVerticalDragGestures(onDragStart = { acc = 0f }) { change, dy ->
+                    change.consume()
+                    acc += dy
+                    val step = (acc / rowPx).toInt()
+                    if (step != 0) {
+                        acc -= step * rowPx
+                        dragged = ((dragged ?: shownFirst) - step).coerceIn(0, (n - maxRows).coerceAtLeast(0))
+                    }
+                }
+            }.padding(vertical = 10f.udp()),
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16f.udp(), vertical = 6f.udp()), verticalAlignment = Alignment.CenterVertically) {
             if (state.menuStack.size > 1) {
