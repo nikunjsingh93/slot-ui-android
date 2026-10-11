@@ -162,11 +162,35 @@ class MainActivity : ComponentActivity(), SlotHost {
     // --- library ---------------------------------------------------------------------------------
 
     private fun addRoot(uri: Uri) {
-        contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        // read and write, so slot can keep a copy of your choices beside the games (falls back to read-only)
+        runCatching {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        }.onFailure { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         val roots = (Persist.loadRoots(this) + uri.toString()).distinct()
         Persist.saveRoots(this, roots)
         state.overlay = fyi.slot.ui.Overlay.None
-        rescan(quiet = false)
+        lifecycleScope.launch {
+            // on a fresh install the folder may hold the copy of your earlier choices
+            if (withContext(Dispatchers.IO) { Backup.restore(this@MainActivity, uri) }) {
+                state.settings = Persist.loadSettings(this@MainActivity)
+                sounds.enabled = state.settings.sounds
+                state.appKinds.putAll(Apps.loadKinds(this@MainActivity))
+                state.toast("Restored your settings and apps")
+            }
+            withContext(Dispatchers.IO) { Backup.write(this@MainActivity) }
+            rescan(quiet = false)
+        }
+    }
+
+    private var backupJob: kotlinx.coroutines.Job? = null
+
+    /** Refreshes the copy of your choices in the ROM folder shortly after the last change. */
+    private fun backupSoon() {
+        backupJob?.cancel()
+        backupJob = lifecycleScope.launch {
+            kotlinx.coroutines.delay(1500)
+            withContext(Dispatchers.IO) { Backup.write(this@MainActivity) }
+        }
     }
 
     private fun rescan(quiet: Boolean) {
@@ -265,6 +289,7 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     override fun onSettingsChanged(settings: Settings) {
         Persist.saveSettings(this, settings)
+        backupSoon()
         sounds.enabled = settings.sounds
     }
 
@@ -295,6 +320,7 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     override fun onAppKind(pkg: String, kind: fyi.slot.ui.AppKind) {
         Apps.saveKinds(this, state.appKinds)
+        backupSoon()
         publish()
     }
 

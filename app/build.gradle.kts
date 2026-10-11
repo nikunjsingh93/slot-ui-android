@@ -16,10 +16,21 @@ android {
         versionName = "0.1.0"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
+    // One fixed signing key shared by every build, on any computer, so a new APK can always update the installed
+    // app in place (a different key forces an uninstall, which wipes the app's data). It is the debug key, so it is public.
+    signingConfigs {
+        create("slot") {
+            storeFile = file("slot-signing.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     buildTypes {
+        debug { signingConfig = signingConfigs.getByName("slot") }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("slot")
         }
     }
     compileOptions {

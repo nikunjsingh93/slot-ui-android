@@ -90,6 +90,14 @@ scripts/fetch-cores.sh          # downloads the arm64 libretro cores into app/sr
 ./gradlew :app:assembleDebug    # app/build/outputs/apk/debug/app-debug.apk
 ```
 
+Every build (debug or release, on any computer) is signed with the key in `app/slot-signing.keystore`, so a new APK
+always updates the installed app in place and keeps its data. It is a plain debug key and is public on purpose; never
+swap it for another one, or Android will insist on an uninstall, which wipes the app's settings and saves.
+
+Your Apps & games choices and settings are also copied to a hidden `.slot-backup.json` in the ROM folder you picked
+(once the folder has been picked with write access). If you ever do have to reinstall, pick the same folder again and
+they come back.
+
 The UI lives in `ui/`, a Kotlin Multiplatform Compose module, so it can also be rendered headlessly on a desktop:
 
 ```bash
