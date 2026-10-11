@@ -291,15 +291,15 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         when (val s = screen) {
             Screen.Browse -> when (pad) {
                 // Android's own key auto-repeat is ignored: slot times its own (400 ms, then 110/85/65/50 ms).
-                Pad.Left, Pad.Right -> if (!repeat) {
-                    val d = if (pad == Pad.Left) -1 else 1
+                Pad.Left, Pad.Right, Pad.R1, Pad.R2 -> if (!repeat) {
+                    val d = if (pad == Pad.Left || pad == Pad.R1) -1 else 1
                     ringStep(d)
                     heldDir = d; heldDue = clockMs + HOLD_DELAY_MS; heldFired = 0
                 }
                 Pad.Up -> if (!repeat) skipLetter(-1)
                 Pad.Down -> if (!repeat) skipLetter(+1)
                 Pad.L1 -> if (!repeat) switchSystem(-1)
-                Pad.R1 -> if (!repeat) switchSystem(+1)
+                Pad.L2 -> if (!repeat) switchSystem(+1)
                 Pad.Start -> openCorePicker()
                 Pad.Y -> openDrawer()
                 Pad.Menu, Pad.Select -> openSettings()
@@ -321,7 +321,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     }
 
     fun release(pad: Pad, now: Long = 0L) {
-        if ((pad == Pad.Left && heldDir < 0) || (pad == Pad.Right && heldDir > 0)) heldDir = 0
+        if (((pad == Pad.Left || pad == Pad.R1) && heldDir < 0) || ((pad == Pad.Right || pad == Pad.R2) && heldDir > 0)) heldDir = 0
         if (pad == Pad.A && aDown) {
             aDown = false
             aHold = 0f
