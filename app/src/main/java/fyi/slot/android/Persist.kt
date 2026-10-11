@@ -53,6 +53,7 @@ object Persist {
                 drawerGrid = o.optBoolean("drawerGrid", d.drawerGrid),
                 drawerSize = enumOf("drawerSize", fyi.slot.ui.DrawerSize.entries.toTypedArray(), d.drawerSize),
                 brightness = o.optDouble("brightness", d.brightness.toDouble()).toFloat(),
+                defaultCores = o.optJSONObject("defaultCores")?.let { m -> m.keys().asSequence().associateWith { m.getString(it) } } ?: d.defaultCores,
             )
         }.getOrDefault(Settings())
     }
@@ -67,6 +68,7 @@ object Persist {
             .put("sounds", s.sounds).put("swapFaceButtons", s.swapFaceButtons)
             .put("downloadCovers", s.downloadCovers).put("brightness", s.brightness.toDouble())
             .put("cartSize", s.cartSize.name).put("drawerGrid", s.drawerGrid).put("drawerSize", s.drawerSize.name)
+            .put("defaultCores", JSONObject(s.defaultCores))
         writeAtomic(file(ctx, "settings.json"), o.toString())
     }
 
@@ -97,7 +99,8 @@ object Persist {
                     size = o.optLong("size"), code = o.optString("code"), gbTitle = o.optString("gbTitle"),
                     cgbFlag = o.optInt("cgb", -1), japan = o.optBoolean("japan"),
                     entryName = o.optString("entry"),
-                    coreId = meta[id]?.core, lastPlayed = meta[id]?.played ?: 0L,
+                    coreId = meta[id]?.let { m -> m.core.takeIf { isPinned(m, sys) } }, corePinned = meta[id]?.let { m -> isPinned(m, sys) } ?: false,
+                    lastPlayed = meta[id]?.played ?: 0L,
                     hasSave = StateStore.hasAuto(ctx, id),
                 )
             }.filterNotNull()
@@ -116,7 +119,11 @@ object Persist {
 
     // --- per-game metadata ---------------------------------------------------------------------------
 
-    class Meta(val core: String?, val played: Long)
+    /** [pinned] is null in files written before the default-emulator setting existed. */
+    class Meta(val core: String?, val played: Long, val pinned: Boolean? = null)
+
+    /** A game keeps its own core only if it was picked for it. Older files can't say, so a core other than the system's first is taken as a pick. */
+    private fun isPinned(m: Meta, sys: GameSystem): Boolean = m.core != null && (m.pinned ?: (m.core != sys.cores.first().id))
 
     private fun loadMeta(ctx: Context): Map<String, Meta> {
         val f = file(ctx, "meta.json")
@@ -125,18 +132,18 @@ object Persist {
             val o = JSONObject(f.readText())
             o.keys().asSequence().associateWith { k ->
                 val m = o.getJSONObject(k)
-                Meta(m.optString("core").ifEmpty { null }, m.optLong("played"))
+                Meta(m.optString("core").ifEmpty { null }, m.optLong("played"), if (m.has("pinned")) m.optBoolean("pinned") else null)
             }
         }.getOrDefault(emptyMap())
     }
 
     @Synchronized
-    fun updateMeta(ctx: Context, gameId: String, core: String? = null, played: Long? = null) {
+    fun updateMeta(ctx: Context, gameId: String, core: String? = null, played: Long? = null, pinned: Boolean? = null) {
         val cur = loadMeta(ctx).toMutableMap()
         val old = cur[gameId]
-        cur[gameId] = Meta(core ?: old?.core, played ?: old?.played ?: 0L)
+        cur[gameId] = Meta(core ?: old?.core, played ?: old?.played ?: 0L, pinned ?: old?.pinned)
         val o = JSONObject()
-        for ((k, v) in cur) o.put(k, JSONObject().put("core", v.core ?: "").put("played", v.played))
+        for ((k, v) in cur) o.put(k, JSONObject().put("core", v.core ?: "").put("played", v.played).apply { v.pinned?.let { put("pinned", it) } })
         writeAtomic(file(ctx, "meta.json"), o.toString())
     }
 }

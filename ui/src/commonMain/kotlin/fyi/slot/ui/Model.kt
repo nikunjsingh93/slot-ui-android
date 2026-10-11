@@ -215,6 +215,8 @@ data class Game(
     /** For ROMs inside a .zip: the entry name, otherwise empty. */
     val entryName: String = "",
     val coreId: String? = null,
+    /** True when the core was picked for this game specifically (START on its cart), rather than the system default. */
+    val corePinned: Boolean = false,
     val lastPlayed: Long = 0,
     val hasSave: Boolean = false,
 ) {

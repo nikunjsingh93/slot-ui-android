@@ -49,6 +49,8 @@ data class Settings(
     val cartSize: CartSize = CartSize.Default,
     val drawerGrid: Boolean = true,
     val drawerSize: DrawerSize = DrawerSize.Medium,
+    /** Settings > Emulators: system id -> the core or emulator used unless a game has its own choice. */
+    val defaultCores: Map<String, String> = emptyMap(),
 )
 
 enum class TouchMode(val label: String) { Auto("When no controller"), Always("Always"), Never("Never") }
@@ -70,6 +72,8 @@ enum class AppKind(val label: String) { Hidden("Hidden"), App("App"), Game("Game
 
 /** Everything the Android (or preview) host has to provide to the shared UI. */
 interface SlotHost {
+    /** The app version shown in Settings > About. */
+    val versionName: String get() = ""
     fun onLaunch(game: Game, resume: Boolean) {}
     fun onChooseCore(game: Game, coreId: String) {}
     fun onSettingsChanged(settings: Settings) {}

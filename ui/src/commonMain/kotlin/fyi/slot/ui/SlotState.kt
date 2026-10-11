@@ -136,9 +136,13 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     }
     val current: Game? get() = shelf.getOrNull(selected)
 
+    /** Games without a core of their own use the system default from Settings > Emulators. */
+    fun withDefaultCore(g: Game): Game =
+        if (g.corePinned) g else g.copy(coreId = settings.defaultCores[g.system.id]?.takeIf { id -> g.system.cores.any { it.id == id } })
+
     fun setLibrary(list: List<Game>) {
         val keep = current?.id
-        games = list
+        games = list.map(::withDefaultCore)
         if (systemIndex >= systems.size) systemIndex = 0
         val i = shelf.indexOfFirst { it.id == keep }
         selected = if (i >= 0) i else selected.coerceIn(0, (shelf.size - 1).coerceAtLeast(0))
@@ -233,8 +237,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
             val core = game.system.cores[s.chip.coerceIn(0, game.system.cores.lastIndex)]
             host.onChooseCore(game, core.id)
             // Reflect the choice in the library immediately.
-            games = games.map { if (it.id == game.id) it.copy(coreId = core.id) else it }
-            game.copy(coreId = core.id)
+            games = games.map { if (it.id == game.id) it.copy(coreId = core.id, corePinned = true) else it }
+            game.copy(coreId = core.id, corePinned = true)
         } else game
         heldDir = 0
         screen = Screen.Inserting(withCore, resume)

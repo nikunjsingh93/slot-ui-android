@@ -204,7 +204,7 @@ class MainActivity : ComponentActivity(), SlotHost {
             val before = state.games.size
             val meta = withContext(Dispatchers.IO) { Persist.loadLibrary(this@MainActivity).associateBy { it.id } }
             fun merge(list: List<Game>) = list.map { g ->
-                meta[g.id]?.let { g.copy(coreId = it.coreId, lastPlayed = it.lastPlayed, hasSave = StateStore.hasAuto(this@MainActivity, g.id)) } ?: g
+                meta[g.id]?.let { g.copy(coreId = it.coreId, corePinned = it.corePinned, lastPlayed = it.lastPlayed, hasSave = StateStore.hasAuto(this@MainActivity, g.id)) } ?: g
             }
             val list = runCatching {
                 Scanner(this@MainActivity).scan(roots, local) { partial ->
@@ -243,7 +243,7 @@ class MainActivity : ComponentActivity(), SlotHost {
     // --- SlotHost --------------------------------------------------------------------------------
 
     override fun onLaunch(game: Game, resume: Boolean) {
-        Persist.updateMeta(this, game.id, core = game.coreId ?: game.core.id, played = System.currentTimeMillis())
+        Persist.updateMeta(this, game.id, played = System.currentTimeMillis())
         if (game.system.external) { launchExternal(game); return }
         val i = Intent(this, GameActivity::class.java)
             .putExtra(GameActivity.EXTRA_ID, game.id).putExtra(GameActivity.EXTRA_STEM, game.stem)
@@ -284,8 +284,11 @@ class MainActivity : ComponentActivity(), SlotHost {
     }
 
     override fun onChooseCore(game: Game, coreId: String) {
-        Persist.updateMeta(this, game.id, core = coreId)
+        Persist.updateMeta(this, game.id, core = coreId, pinned = true)
     }
+
+    override val versionName: String
+        get() = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull().orEmpty()
 
     override fun onSettingsChanged(settings: Settings) {
         Persist.saveSettings(this, settings)

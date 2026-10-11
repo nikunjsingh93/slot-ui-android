@@ -102,6 +102,7 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
         },
         MenuSub("Screen") { screenPage(null) },
         MenuSub("Gameplay") { gameplayPage() },
+        MenuSub("Emulators") { emulatorsPage() },
         MenuSub("Controls") { controlsPage() },
         MenuSub("Interface") { interfacePage() },
         MenuSub("Apps & games") { appsPage() },
@@ -120,7 +121,7 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
         },
         MenuSub("About") {
             MenuPage("About", listOf(
-                MenuInfo("slot. for Android", "0.1.0"),
+                MenuInfo("slot. for Android", host.versionName),
                 MenuInfo("Original frontend", "Brandon Kowalski"),
                 MenuInfo("Licence", "GPL-3.0"),
                 MenuInfo("Emulation", "libretro cores"),
@@ -128,6 +129,20 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
         },
     ),
 )
+
+/** Settings > Emulators: for every system with more than one emulator or core, which one is used by default. */
+private fun SlotState.emulatorsPage(): MenuPage {
+    val rows = GameSystem.entries.filter { it.cores.size > 1 }.map { sys ->
+        MenuChoice(
+            sys.title, sys.cores.map { it.name },
+            { sys.cores.indexOfFirst { it.id == settings.defaultCores[sys.id] }.coerceAtLeast(0) },
+        ) { i ->
+            update { it.copy(defaultCores = it.defaultCores + (sys.id to sys.cores[i].id)) }
+            games = games.map(::withDefaultCore)
+        }
+    }
+    return MenuPage("Emulators", rows, "Used unless you pick one for a game (START)")
+}
 
 /** Settings > Apps & games: every launchable app, each one Hidden (default), an App or a Game. */
 private fun SlotState.appsPage(): MenuPage {
