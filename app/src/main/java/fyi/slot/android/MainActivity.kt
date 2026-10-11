@@ -124,6 +124,9 @@ class MainActivity : ComponentActivity(), SlotHost {
             externalActive = false
             onGameClosed(android.app.Activity.RESULT_OK)
         }
+        // an app may have been uninstalled while we were away (from the drawer menu)
+        state.refreshDrawer()
+        publish()
         hideSystemBars()
         refreshHud(null)
     }
@@ -317,6 +320,16 @@ class MainActivity : ComponentActivity(), SlotHost {
         val intent = packageManager.getLaunchIntentForPackage(pkg)
         if (intent == null) { state.toast("That app can't be opened"); return }
         runCatching { startActivity(intent) }.onFailure { state.toast("That app wouldn't open") }
+    }
+
+    override fun onAppInfo(pkg: String) {
+        val i = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))
+        runCatching { startActivity(i) }.onFailure { state.toast("App info wouldn't open") }
+    }
+
+    override fun onUninstallApp(pkg: String) {
+        val i = Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))
+        runCatching { startActivity(i) }.onFailure { state.toast("That app can't be uninstalled") }
     }
 
     override fun listApps(): List<fyi.slot.ui.AppEntry> = Apps.list(this)

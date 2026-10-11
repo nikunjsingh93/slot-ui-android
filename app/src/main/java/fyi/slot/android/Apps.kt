@@ -34,7 +34,7 @@ object Apps {
             .map { it.activityInfo.applicationInfo }
             .filter { it.packageName != ctx.packageName }
             .distinctBy { it.packageName }
-            .map { ai -> AppEntry(ai.packageName, ai.loadLabel(pm).toString(), looksLikeGame(ai)) }
+            .map { ai -> AppEntry(ai.packageName, ai.loadLabel(pm).toString(), looksLikeGame(ai), canUninstall(ai)) }
             .sortedBy { it.label.lowercase() }
             .toList()
     }
@@ -43,6 +43,10 @@ object Apps {
     private fun looksLikeGame(ai: ApplicationInfo): Boolean =
         (ai.flags and ApplicationInfo.FLAG_IS_GAME) != 0 ||
             (Build.VERSION.SDK_INT >= 26 && ai.category == ApplicationInfo.CATEGORY_GAME)
+
+    /** Ordinary apps can be removed; system apps (unless they have a user-installed update) cannot. */
+    private fun canUninstall(ai: ApplicationInfo): Boolean =
+        (ai.flags and ApplicationInfo.FLAG_SYSTEM) == 0 || (ai.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
 
     fun label(ctx: Context, pkg: String): String? = runCatching {
         val pm = ctx.packageManager

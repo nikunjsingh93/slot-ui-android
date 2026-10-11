@@ -37,6 +37,9 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     var drawerCursor by mutableIntStateOf(0)
     /** Columns of the grid as laid out on screen, so Up/Down can jump a row. */
     var drawerCols by mutableIntStateOf(1)
+    /** Index of the app whose options sheet (Open / App info / Uninstall) is showing, or null. */
+    var drawerMenu by mutableStateOf<Int?>(null)
+    var drawerMenuCursor by mutableIntStateOf(0)
 
     /** Monotonic counter bumped on every move; lets the shelf play a tick without diffing. */
     var moveTick by mutableIntStateOf(0)
@@ -368,6 +371,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     fun openDrawer() {
         drawerApps = host.listApps()
         drawerCursor = 0
+        drawerMenu = null
         overlay = Overlay.Drawer
         host.onDrawerOpen()
         host.sfx(Sfx.Select)
@@ -391,7 +395,52 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         it.copy(drawerSize = DrawerSize.entries[(it.drawerSize.ordinal + dir).coerceIn(0, n - 1)])
     }
 
+    /** What the options sheet offers for [app]: system apps can't be uninstalled. */
+    fun drawerOptions(app: AppEntry): List<String> = listOfNotNull("Open", "App info", "Uninstall".takeIf { app.canUninstall })
+
+    fun openDrawerMenu(index: Int = drawerCursor) {
+        if (drawerApps.getOrNull(index) == null) return
+        drawerCursor = index
+        drawerMenu = index
+        drawerMenuCursor = 0
+        host.sfx(Sfx.Select)
+    }
+
+    fun closeDrawerMenu() {
+        if (drawerMenu != null) { drawerMenu = null; host.sfx(Sfx.Back) }
+    }
+
+    fun runDrawerOption(i: Int) {
+        val index = drawerMenu ?: return
+        val app = drawerApps.getOrNull(index) ?: return
+        when (drawerOptions(app).getOrNull(i)) {
+            "Open" -> { drawerMenu = null; launchDrawerApp(index) }
+            "App info" -> { drawerMenu = null; host.onAppInfo(app.pkg) }
+            "Uninstall" -> { drawerMenu = null; host.onUninstallApp(app.pkg) }
+        }
+    }
+
+    /** The apps changed behind our back (one was uninstalled): refresh the list and keep the cursor in range. */
+    fun refreshDrawer() {
+        if (overlay != Overlay.Drawer) return
+        drawerApps = host.listApps()
+        drawerCursor = drawerCursor.coerceIn(0, (drawerApps.size - 1).coerceAtLeast(0))
+    }
+
+    private fun drawerMenuPress(pad: Pad, repeat: Boolean) {
+        val app = drawerApps.getOrNull(drawerMenu ?: return) ?: run { drawerMenu = null; return }
+        val n = drawerOptions(app).size
+        when (pad) {
+            Pad.Up -> { drawerMenuCursor = (drawerMenuCursor - 1 + n) % n; host.sfx(Sfx.Tick) }
+            Pad.Down -> { drawerMenuCursor = (drawerMenuCursor + 1) % n; host.sfx(Sfx.Tick) }
+            Pad.A -> if (!repeat) runDrawerOption(drawerMenuCursor)
+            Pad.B, Pad.Y, Pad.Menu, Pad.Start, Pad.Select -> if (!repeat) closeDrawerMenu()
+            else -> {}
+        }
+    }
+
     private fun drawerPress(pad: Pad, repeat: Boolean) {
+        if (drawerMenu != null) { drawerMenuPress(pad, repeat); return }
         val n = drawerApps.size
         val step = if (settings.drawerGrid) drawerCols.coerceAtLeast(1) else 1
         fun go(by: Int) { if (n > 0) { drawerCursor = (drawerCursor + by).coerceIn(0, n - 1); host.sfx(Sfx.Tick) } }
@@ -404,7 +453,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
             Pad.X -> if (!repeat) toggleDrawerLayout()
             Pad.L1, Pad.L2 -> if (!repeat) stepDrawerSize(-1)
             Pad.R1, Pad.R2 -> if (!repeat) stepDrawerSize(+1)
-            Pad.B, Pad.Y, Pad.Menu, Pad.Start, Pad.Select -> if (!repeat) closeOverlay()
+            Pad.Y -> if (!repeat) openDrawerMenu()
+            Pad.B, Pad.Menu, Pad.Start, Pad.Select -> if (!repeat) closeOverlay()
         }
     }
 
@@ -429,6 +479,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
 
     fun closeOverlay() {
         val wasQuick = overlay == Overlay.Quick || overlay == Overlay.States
+        drawerMenu = null
         overlay = Overlay.None
         menuStack.clear(); menuCursor.clear()
         if (wasQuick && screen == Screen.Playing) host.onAction(GameAction.Resume)

@@ -1,9 +1,13 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package fyi.slot.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +41,8 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 
 /**
  * The app drawer (Y on the shelf): every launchable app on the device, as a grid or a list, in three sizes.
- * D-pad moves, A opens, X flips grid/list, L1/R1 change the size; on a touchscreen tap an app or use the header.
+ * D-pad moves, A opens, Y (or a long press) shows Open / App info / Uninstall, X flips grid/list, L1/R1 change the size;
+ * on a touchscreen tap an app or use the header.
  */
 @Composable
 fun AppDrawer(state: SlotState, m: Metrics) {
@@ -64,12 +69,14 @@ fun AppDrawer(state: SlotState, m: Metrics) {
                 Spacer(Modifier.height(10f.udp()))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Hint("A", "Open"); Spacer(Modifier.width(16f.udp()))
+                    Hint("Y", "Options"); Spacer(Modifier.width(16f.udp()))
                     Hint("X", if (s.drawerGrid) "List" else "Grid"); Spacer(Modifier.width(16f.udp()))
                     Hint("L1 R1", "Size"); Spacer(Modifier.width(16f.udp()))
                     Hint("B", "Back")
                 }
             }
         }
+        state.drawerMenu?.let { DrawerSheet(state, it) }
     }
 }
 
@@ -137,7 +144,7 @@ private fun DrawerGrid(state: SlotState, apps: List<AppEntry>, icon: Float, cols
                 Modifier.clip(RoundedCornerShape(14f.udp()))
                     .background(if (on) SlotColors.Ink.copy(alpha = .16f) else Color.Transparent)
                     .then(if (on) Modifier.border(1.6f.udp(), SlotColors.Ink.copy(alpha = .85f), RoundedCornerShape(14f.udp())) else Modifier)
-                    .clickable { state.drawerCursor = i; state.launchDrawerApp(i) }
+                    .combinedClickable(onLongClick = { state.openDrawerMenu(i) }) { state.drawerCursor = i; state.launchDrawerApp(i) }
                     .padding(vertical = 8f.udp()),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -165,7 +172,7 @@ private fun DrawerList(state: SlotState, apps: List<AppEntry>, icon: Float) {
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(12f.udp()))
                     .background(if (on) SlotColors.Ink else SlotColors.Housing.copy(alpha = .55f))
-                    .clickable { state.drawerCursor = i; state.launchDrawerApp(i) }
+                    .combinedClickable(onLongClick = { state.openDrawerMenu(i) }) { state.drawerCursor = i; state.launchDrawerApp(i) }
                     .padding(horizontal = 10f.udp(), vertical = 6f.udp()),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -173,6 +180,52 @@ private fun DrawerList(state: SlotState, apps: List<AppEntry>, icon: Float) {
                 Spacer(Modifier.width(14f.udp()))
                 SlotText(app.label, 16.5f, bold = on, color = if (on) SlotColors.CapInk else SlotColors.Ink, modifier = Modifier.weight(1f))
                 if (app.likelyGame) SlotText("game", 12f, color = (if (on) SlotColors.CapInk else SlotColors.Ink).copy(alpha = .55f))
+            }
+        }
+    }
+}
+
+/** Long-press (or Y) options for one app: open it, see its Android App info, or uninstall it. */
+@Composable
+private fun DrawerSheet(state: SlotState, index: Int) {
+    val app = state.drawerApps.getOrNull(index) ?: return
+    val options = state.drawerOptions(app)
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = .6f)).pointerInput(Unit) { detectTapGestures { state.closeDrawerMenu() } },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.width(300f.udp()).clip(RoundedCornerShape(14f.udp())).background(SlotColors.Housing)
+                .border(1.2f.udp(), SlotColors.Edge, RoundedCornerShape(14f.udp()))
+                .pointerInput(Unit) { detectTapGestures { } }.padding(vertical = 10f.udp()),
+        ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16f.udp(), vertical = 8f.udp()), verticalAlignment = Alignment.CenterVertically) {
+                AppIcon(state, app, 40f)
+                Spacer(Modifier.width(12f.udp()))
+                Column(Modifier.weight(1f)) {
+                    SlotText(app.label, 17f, bold = true)
+                    SlotText(app.pkg, 11f, color = SlotColors.Ink.copy(alpha = .5f))
+                }
+            }
+            Spacer(Modifier.height(4f.udp()))
+            options.forEachIndexed { i, label ->
+                val on = i == state.drawerMenuCursor
+                val danger = label == "Uninstall"
+                Row(
+                    Modifier.fillMaxWidth().height(40f.udp()).padding(horizontal = 8f.udp()).clip(RoundedCornerShape(9f.udp()))
+                        .background(if (on) SlotColors.Ink else Color.Transparent)
+                        .clickable { state.drawerMenuCursor = i; state.runDrawerOption(i) }.padding(horizontal = 12f.udp()),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val ink = if (on) SlotColors.CapInk else if (danger) Color(0xFFE5534B) else SlotColors.Ink
+                    SlotText(label, 16f, bold = on, color = ink)
+                }
+            }
+            if (state.gamepad) {
+                Spacer(Modifier.height(8f.udp()))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    Hint("A", "Select"); Spacer(Modifier.width(14f.udp())); Hint("B", "Back")
+                }
             }
         }
     }

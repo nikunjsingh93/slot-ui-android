@@ -75,7 +75,7 @@ They slide into the slot like any other cart, and coming back to slot ejects the
 ### App drawer
 
 Press **Y** (or tap the grid button beside the clock) to open a launcher with every app on the device, as a grid or a
-list. D-pad moves, **A** opens, **X** flips grid/list, **L1/R1** change the icon size. The same options, plus
+list. D-pad moves, **A** opens, **Y** (or a long press on touch) shows **Open / App info / Uninstall** for the app, **X** flips grid/list, **L1/R1** change the icon size. The layout and size options, plus
 **Cart size** (XS, Small, Default, Large, XL), are under **Settings > Interface**.
 
 

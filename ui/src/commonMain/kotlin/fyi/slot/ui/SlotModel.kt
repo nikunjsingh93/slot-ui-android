@@ -66,7 +66,7 @@ enum class DrawerSize(val label: String, val icon: Float) { Small("Small", 52f),
 data class StateSlot(val slot: Int, val label: String, val thumb: ImageBitmap?, val time: String)
 
 /** An installed Android app the user can put on the Apps or Installed shelf. */
-data class AppEntry(val pkg: String, val label: String, val likelyGame: Boolean)
+data class AppEntry(val pkg: String, val label: String, val likelyGame: Boolean, val canUninstall: Boolean = false)
 
 enum class AppKind(val label: String) { Hidden("Hidden"), App("App"), Game("Game") }
 
@@ -85,6 +85,10 @@ interface SlotHost {
     /** The app drawer was opened: load icons for [SlotState.drawerApps] into [SlotState.appIcons]. */
     fun onDrawerOpen() {}
     fun onLaunchApp(pkg: String) {}
+    /** Opens Android's own App info screen for [pkg]. */
+    fun onAppInfo(pkg: String) {}
+    /** Asks Android to uninstall [pkg] (the system shows its usual confirmation). */
+    fun onUninstallApp(pkg: String) {}
     fun onAction(action: GameAction) {}
     /** Touch overlay button for the running game. */
     fun onButton(pad: Pad, down: Boolean) {}
