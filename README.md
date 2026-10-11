@@ -52,7 +52,7 @@ folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`
 | System | Emulator it opens | Notes |
 |---|---|---|
 | PlayStation | DuckStation | `.chd`, `.cue` (the `.bin` next to it is hidden), `.pbp`, `.iso` |
-| PlayStation 2 | AetherSX2 | `.iso`, `.chd`, `.cso`, `.cue` |
+| PlayStation 2 | AetherSX2 or ARMSX2 | `.iso`, `.chd`, `.cso`, `.cue` |
 | Nintendo 64 | M64Plus FZ (Pro) | `.z64`, `.n64`, `.v64`, and `.zip` straight from the folder |
 | GameCube | Dolphin, or Dolphin MMJR | `.iso`, `.ciso`, `.gcm`, `.rvz`, `.gcz`, `.wbfs` |
 | PSP | PPSSPP | `.iso`, `.cso`, `.pbp`, `.chd` |
@@ -60,7 +60,7 @@ folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`
 
 PSP games are UMDs (a rounded caddy with the disc inside). Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
 and come back to slot, the disc pops back out of the slot. Cover art for discs is cropped from the libretro box art.
-ArmSX2 can't be told which game to boot, so PS2 games open in AetherSX2.
+PS2 games open in AetherSX2 (or NetherSX2) by default; press START on a disc and pick **ARMSX2** to use that instead.
 
 Folder names are matched loosely, so `DC`, `dc`, `Dreamcast`, `Sega Dreamcast (Games)`, `PS1`, `Sony PlayStation`, `Game Cube`,
 `NGC`, `Nintendo 64`, `Mega Drive`, `Super Nintendo` and so on all work, anywhere in the folder tree you picked.

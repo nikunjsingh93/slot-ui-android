@@ -25,6 +25,10 @@ object ExternalLauncher {
         Emulator("aethersx2", "xyz.aethersx2.android", "AetherSX2") { _, path, uri ->
             Intent().setClassName("xyz.aethersx2.android", "xyz.aethersx2.android.EmulationActivity").putExtra("bootPath", uri.toString()).grant(uri)
         },
+        // ARMSX2: an "open this file" request on its splash screen, with the same document grant
+        Emulator("armsx2", "com.armsx2", "ARMSX2") { _, _, uri ->
+            Intent(Intent.ACTION_VIEW).setClassName("com.armsx2", "com.armsx2.BootSplashActivity").grant(uri)
+        },
         // M64Plus FZ: an "open this file" request, zips and all
         Emulator("mupen64fz", "org.mupen64plusae.v3.fzurita.pro", "M64Plus FZ Pro") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.fromFile(File(path)))
