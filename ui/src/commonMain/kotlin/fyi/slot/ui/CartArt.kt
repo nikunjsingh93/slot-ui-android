@@ -52,7 +52,8 @@ class CartAssets(
     private val cache = HashMap<String, CartPainter>()
 
     fun painterFor(game: Game, cover: ImageBitmap?): CartPainter {
-        val key = game.id + (if (cover != null) "#c" else "") + game.coreId
+        // the system is part of the key: an app switched between Apps and Installed keeps its id but changes look
+        val key = game.id + game.system.id + (if (cover != null) "#c" else "") + game.coreId
         return cache.getOrPut(key) { CartPainter.create(this, game, cover) }
     }
 }

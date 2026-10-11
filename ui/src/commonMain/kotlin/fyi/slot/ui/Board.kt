@@ -61,7 +61,7 @@ private val FlipEase = CubicBezierEasing(.3f, 0f, .2f, 1f)
 @Composable
 fun CorePicker(state: SlotState, m: Metrics, assets: CartAssets, screen: Screen.CorePicker) {
     val game = screen.game
-    val painter = remember(game.id, game.coreId) { assets.painterFor(game, state.covers[game.id]) }
+    val painter = remember(game.id, game.system, game.coreId) { assets.painterFor(game, state.covers[game.id]) }
     val spec = painter.spec
     val flip = remember { Animatable(0f) }
     LaunchedEffect(Unit) { flip.animateTo(1f, tween(560, easing = FlipEase)) }
