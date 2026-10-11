@@ -43,6 +43,40 @@ On a touchscreen the footer has a **gear** (settings) beside the battery and an 
 
 If your handheld reports A/B the other way round, flip **Settings > Controls > Swap A/B and X/Y**.
 
+## Saving and loading in a game
+
+This applies to the systems slot emulates itself (GBA, GB, GBC, NES, SNES, Mega Drive, Master System, Game Gear, PC Engine).
+PlayStation, PS2, N64, GameCube, PSP and Dreamcast run in their own emulators, which have their own save menus.
+
+- **In-game saves (battery saves)** are written for you: every few seconds while you play and again when you eject.
+  You never have to do anything for the game's own "Save" to stick.
+- **Pause menu:** press **MENU** during a game (on a touchscreen tap the **MENU** pill at the top). It has **Resume**,
+  **Save states**, **Quick save**, **Quick load**, **Fast forward**, **Screen**, **Gameplay**, **Controls**,
+  **Reset game** and **Eject**.
+- **Quick save / Quick load** use slot 1. One button press each, no questions asked.
+- **Save states:** press **MENU twice quickly** (or pick **Save states** in the pause menu) to open the state
+  switcher, a row of cards with a screenshot of each slot. There are nine slots: slot 0 is the automatic one, slot 1
+  is the quick-save slot and slots 2 to 8 are yours.
+
+  | Button | In the state switcher |
+  |---|---|
+  | Left / Right | pick a slot |
+  | **A** | load the slot (on an empty slot it saves there instead) |
+  | **Y** | save to the slot, replacing what is there |
+  | **X** | delete the slot |
+  | **SELECT** | undo the last load, in case you loaded by mistake |
+  | **B** or **MENU** | close and go back to the game |
+
+  On a touchscreen tap a card to select it, and tap the selected card to load it.
+- **Auto-resume:** **Eject** (pause menu) saves an automatic state in slot 0 (turn this off in **Settings > Gameplay >
+  Auto-save on eject**). Next time you pick the game, a quick press of **A** resumes exactly where you stopped, and
+  holding **A** starts the game fresh.
+- **Rewind** (hold **L2**) and **Fast forward** (hold **R2**, or double-tap **R2** to lock it on and double-tap again to
+  turn it off) are also in **Settings > Gameplay**; **Reset game** restarts the game (anything unsaved is lost).
+
+States and battery saves live inside slot's own app storage (`files/states` and `files/saves`), so they are removed if
+the app is uninstalled; updates keep them.
+
 **gpSP** needs `gba_bios.bin` in `Android/data/fyi.slot.android/files/system`. Without it slot quietly uses mGBA.
 
 ## Systems that open your own emulators
