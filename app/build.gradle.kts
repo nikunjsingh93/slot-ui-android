@@ -12,8 +12,8 @@ android {
         applicationId = "fyi.slot.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.1.6"
+        versionCode = 8
+        versionName = "0.1.7"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
     // One fixed signing key shared by every build, on any computer, so a new APK can always update the installed

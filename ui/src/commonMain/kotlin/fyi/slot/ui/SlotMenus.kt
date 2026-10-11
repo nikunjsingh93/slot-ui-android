@@ -110,8 +110,8 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
             MenuPage("Button guide", listOf(
                 MenuInfo("Left / Right", "Browse (hold to speed up)"),
                 MenuInfo("Up / Down", "Jump by letter"),
-                MenuInfo("L1 / L2", "Previous / next system"),
-                MenuInfo("R1 / R2", "Previous / next game"),
+                MenuInfo("L1 / R1", "Previous / next system"),
+                MenuInfo("L2 / R2", "Previous / next game"),
                 MenuInfo("A", "Play (hold for a new game)"),
                 MenuInfo("START", "Pick the core"),
                 MenuInfo("Y", "App drawer"),

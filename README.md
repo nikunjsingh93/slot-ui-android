@@ -30,8 +30,8 @@ Tested on an Anbernic RG476H (Android 13, 1280x960).
 |---|---|---|
 | Left / Right | browse (hold to speed up) | |
 | Up / Down | jump by letter | |
-| L1 / L2 | previous / next system | |
-| R1 / R2 | previous / next game (same as Left / Right) | |
+| L1 / R1 | previous / next system | |
+| L2 / R2 | previous / next game (same as Left / Right) | |
 | Y | app drawer | |
 | A | play (tap resumes, hold for a new game) | |
 | START | flip the cart: choose the core | |
