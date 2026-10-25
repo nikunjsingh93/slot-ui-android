@@ -288,7 +288,7 @@ private fun DrawScope.drawEmpty(m: Metrics) {
 @Composable
 private fun TopBar(state: SlotState, m: Metrics) {
     Box(Modifier.fillMaxWidth().height(m.topBar.pxToDp()).padding(horizontal = 24f.udp())) {
-        Box(Modifier.align(if (m.portrait) Alignment.BottomCenter else Alignment.Center).padding(bottom = if (m.portrait) 8f.udp() else 0f.udp())) {
+        Box(Modifier.align(if (m.portrait) Alignment.BottomCenter else Alignment.Center).fillMaxWidth().padding(bottom = if (m.portrait) 8f.udp() else 0f.udp())) {
             if (state.systems.isNotEmpty()) SystemPills(state.systems, state.systemIndex) { state.selectSystem(it) }
         }
     }

@@ -2,13 +2,13 @@
 
 ## Last Updated
 
-Date: 2026-10-22
+Date: 2026-10-25
 Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.7** (`versionCode` 8) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.7` with `slot-android-0.1.7.apk` attached. Everything the user asked for so far is
+Version **0.1.8** (`versionCode` 9) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.8` with `slot-android-0.1.8.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -19,6 +19,10 @@ cover art with fuzzy matching and a Wikipedia fallback; Settings > Emulators (de
 emulator); cart size and drawer options; touch scrolling in menus; backup of choices in the ROM folder; fixed signing key.
 
 ## Recently Completed (newest first, all in git history)
+
+- System pill bar scrolls and centres the selected system (square RG Rotate screen cut off the right side); pause menu now
+  starts with Eject then Resume (0.1.8).
+
 
 - README section "Saving and loading in a game" (`8a3bc42`).
 - Shelf buttons: L1/R1 previous/next system, L2/R2 previous/next game (0.1.7). Earlier variants (0.1.6) were wrong

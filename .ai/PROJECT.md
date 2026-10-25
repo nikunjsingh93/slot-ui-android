@@ -10,7 +10,8 @@ Kowalski) that keeps its look and exact motion (cartridges and discs slide into 
 
 - Repository: https://github.com/nikunjsingh93/slot-ui-android (branch `main`). Releases carry the APK.
 - Package `fyi.slot.android`, version tracked in `app/build.gradle.kts` (see `HANDOFF.md` for the current one).
-- Primary test device: the user's Anbernic RG476H handheld (Android 13, arm64, 1280x960, 4:3). Also tested on the
+- Test devices: the user's Anbernic RG476H handheld (Android 13, arm64, 1280x960, 4:3), an Anbernic RG Rotate (Android 12,
+  720x720 square, density 240; `Metrics.portrait` is true there because w < h * 1.05, so it uses the portrait layout), and the
   user's Samsung S25 Ultra (Android 16). Handhelds are the real target; phones must work too.
 - Not run on an emulator: there is no Android emulator for Windows ARM64, the development machine.
 
@@ -171,3 +172,11 @@ Run from the project root in Git Bash on Windows. Set `MSYS_NO_PATHCONV=1` for a
 - UI sizes use design units (`Float.udp()`, `Metrics.u`), never raw pixels.
 - New settings: add to `Settings`, `Persist.loadSettings`/`saveSettings`, a menu row in `SlotMenus.kt`, and the README.
 - After a user-visible change update the README and the in-app Button guide if buttons changed.
+
+## Layout notes
+
+- Square screens (RG Rotate 720x720) use the portrait layout. The system pill bar scrolls horizontally and keeps the
+  selected pill centred (`SystemPills` in `Hud.kt`); never size it to its content or the last systems fall off screen.
+- The pause menu lists Eject first and Resume second (user request: Back then A quits quickly).
+- Wireless debugging for a new device needs `adb pair <ip>:<pairing port> <code>` once, then `adb connect <ip>:<port>`;
+  ports and codes change, ask the user and never write them into the repository.

@@ -50,9 +50,9 @@ PlayStation, PS2, N64, GameCube, PSP and Dreamcast run in their own emulators, w
 
 - **In-game saves (battery saves)** are written for you: every few seconds while you play and again when you eject.
   You never have to do anything for the game's own "Save" to stick.
-- **Pause menu:** press **MENU** during a game (on a touchscreen tap the **MENU** pill at the top). It has **Resume**,
+- **Pause menu:** press **MENU** during a game (on a touchscreen tap the **MENU** pill at the top). It has **Eject** (first, so Back then A quits), **Resume**,
   **Save states**, **Quick save**, **Quick load**, **Fast forward**, **Screen**, **Gameplay**, **Controls**,
-  **Reset game** and **Eject**.
+  and **Reset game**.
 - **Quick save / Quick load** use slot 1. One button press each, no questions asked.
 - **Save states:** press **MENU twice quickly** (or pick **Save states** in the pause menu) to open the state
   switcher, a row of cards with a screenshot of each slot. There are nine slots: slot 0 is the automatic one, slot 1

@@ -68,6 +68,10 @@ fun SlotState.buildQuickMenu(): MenuPage {
     return MenuPage(
         g?.title ?: "Paused",
         listOf(
+            // Eject first: it is what you reach for most when you are done, and Back then A quits in two presses
+            MenuAction("Eject", if (settings.autoSaveOnEject) "Saves automatically" else null) {
+                host.onAction(GameAction.Eject(settings.autoSaveOnEject))
+            },
             MenuAction("Resume") { closeOverlay() },
             MenuAction("Save states", "Browse, load, save") { openStates() },
             MenuAction("Quick save") { host.onAction(GameAction.SaveState(1)); toast("State saved to slot 1"); closeOverlay() },
@@ -81,9 +85,6 @@ fun SlotState.buildQuickMenu(): MenuPage {
                     MenuAction("Yes, reset") { host.onAction(GameAction.Reset); closeOverlay() },
                     MenuAction("No") { popMenu() },
                 ), subtitle = "Unsaved progress is lost.")
-            },
-            MenuAction("Eject", if (settings.autoSaveOnEject) "Saves automatically" else null) {
-                host.onAction(GameAction.Eject(settings.autoSaveOnEject))
             },
         ),
     )
