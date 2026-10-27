@@ -34,12 +34,12 @@ object ExternalLauncher {
             Intent(Intent.ACTION_VIEW, Uri.fromFile(File(path)))
                 .setClassName("org.mupen64plusae.v3.fzurita.pro", "paulscode.android.mupen64plusae.SplashActivity")
         },
-        // Dolphin: an "open this file" request whose data is the plain path
+        // Dolphin / MMJR: MainActivity starts the game named in the "AutoStartFile" extra (older MMJR builds ignore the VIEW data and just show their menu)
         Emulator("dolphin", "org.dolphinemu.dolphinemu", "Dolphin") { _, path, uri ->
-            Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.dolphinemu", "org.dolphinemu.dolphinemu.ui.main.MainActivity")
+            Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.dolphinemu", "org.dolphinemu.dolphinemu.ui.main.MainActivity").putExtra("AutoStartFile", path)
         },
         Emulator("dolphin_mmjr", "org.dolphinemu.mmjr", "Dolphin MMJR") { _, path, uri ->
-            Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.mmjr", "org.dolphinemu.dolphinemu.ui.main.MainActivity")
+            Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.mmjr", "org.dolphinemu.dolphinemu.ui.main.MainActivity").putExtra("AutoStartFile", path)
         },
         // PPSSPP: an "open this file" request with the plain path
         Emulator("ppsspp", "org.ppsspp.ppsspp", "PPSSPP") { _, path, uri ->

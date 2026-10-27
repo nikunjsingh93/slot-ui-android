@@ -87,6 +87,8 @@ Mega Drive, Master System, Game Gear, PC Engine. Systems handed to the user's in
   - M64Plus FZ Pro (`ACTION_VIEW`, `Uri.fromFile`, `.SplashActivity`), Dolphin / Dolphin MMJR
     (`ACTION_VIEW`, raw path string as data, `ui.main.MainActivity`), PPSSPP (`.PpssppActivity`, raw path),
     Redream (`.MainActivity`, raw path as plain string, not `file://`): verified on the handheld only, with raw paths.
+  - Dolphin MMJR2 (`org.dolphinemu.mmjr`, the RG Rotate build) ignores the VIEW data and only shows its menu; its
+    `MainActivity` boots a game from the string extra `AutoStartFile` (path). Both Dolphin builds now get that extra.
   - Candidate emulators are tried in order (the game's choice first); the first installed one is launched.
   - `<queries>` in the manifest must list every emulator package (Android 11+ package visibility).
 - **Apps / Installed shelves** (`Apps.kt`): nothing shown by default; Settings > Apps & games sets each launcher app
