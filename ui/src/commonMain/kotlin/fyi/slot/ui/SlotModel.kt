@@ -45,6 +45,8 @@ data class Settings(
     val sounds: Boolean = true,
     val swapFaceButtons: Boolean = false,
     val downloadCovers: Boolean = true,
+    /** Your own art server (tools/art-server), e.g. "http://192.168.1.10:8787"; empty when not used. */
+    val artServer: String = "",
     val brightness: Float = 1f,
     val cartSize: CartSize = CartSize.Default,
     /** Shelf view: false = carts only (slot), true = a list of games beside the cart. */
@@ -90,6 +92,8 @@ interface SlotHost {
     fun onChooseCore(game: Game, coreId: String) {}
     fun onSettingsChanged(settings: Settings) {}
     fun onPickLibrary() {}
+    /** Settings > Library > Art server: ask for the address of your own art server. */
+    fun onEditArtServer() {}
     fun onRescan() {}
     /** Save transfer (Settings > Saves): zip all saves out, zip saves in, or the same for one game. */
     fun onExportSaves(game: Game?) {}

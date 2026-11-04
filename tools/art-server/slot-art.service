@@ -1,0 +1,18 @@
+# systemd unit for the slot art server.
+#   sudo cp slot-art.service /etc/systemd/system/
+#   (edit User= and the paths if you put the folder somewhere other than /opt/slot-art)
+#   sudo systemctl daemon-reload && sudo systemctl enable --now slot-art
+#   journalctl -u slot-art -f        # watch what it fetches
+[Unit]
+Description=slot art server (cart labels and disc prints for slot-android)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=slot
+WorkingDirectory=/opt/slot-art
+ExecStart=/usr/bin/python3 /opt/slot-art/slot_art_server.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -58,6 +58,9 @@ or box art appear. With your own games the labels show title screens and box art
    `Gran Turismo 4.iso` still finds `Gran Turismo 4 (USA)`), then from the game's Wikipedia page. Put your own
    `<rom name>.png` into `Android/data/fyi.slot.android/files/labels` to override it, or turn the download off in
    **Settings > Library**.
+6. **Real disc prints and cart labels for every system:** run your own [art server](tools/art-server/README.md) (one
+   Python file, e.g. on a home Ubuntu box) with your ScreenScraper account, and enter its address in
+   **Settings > Library > Art server**. It asks ScreenScraper once per game and serves all your devices from its cache.
 
 **BIOS files** go in `Android/data/fyi.slot.android/files/system`. **gpSP** needs `gba_bios.bin` there (without it slot
 quietly uses mGBA). For **Flycast** (Dreamcast) put `dc_boot.bin` and `dc_flash.bin` in your Dreamcast folder and slot

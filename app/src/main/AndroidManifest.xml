@@ -34,6 +34,7 @@
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
 
     <application
+        android:usesCleartextTraffic="true"
         android:largeHeap="true"
         android:name=".SlotApp"
         android:allowBackup="false"

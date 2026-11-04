@@ -123,6 +123,7 @@ fun SlotState.buildSettingsMenu(): MenuPage = MenuPage(
                 MenuAction("Choose ROM folder") { host.onPickLibrary() },
                 MenuAction("Rescan library") { host.onRescan(); closeOverlay() },
                 MenuToggle("Download cart art", { settings.downloadCovers }) { v -> update { it.copy(downloadCovers = v) } },
+                MenuAction("Art server", settings.artServer.ifEmpty { "Off" }) { closeOverlay(); host.onEditArtServer() },
                 MenuInfo("Games found", games.size.toString()),
             ))
         },

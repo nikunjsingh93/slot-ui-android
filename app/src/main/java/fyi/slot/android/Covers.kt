@@ -39,11 +39,32 @@ class Covers(private val ctx: Context) {
     private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>()
     private val indexes = java.util.concurrent.ConcurrentHashMap<String, CoverMatch.Index>()
 
-    suspend fun load(game: Game, allowNetwork: Boolean): ImageBitmap? = withContext(Dispatchers.IO) {
+    suspend fun load(game: Game, allowNetwork: Boolean, server: String = ""): ImageBitmap? = withContext(Dispatchers.IO) {
         if (Apps.isApp(game)) return@withContext Apps.icon(ctx, Apps.packageOf(game))
         for (ext in listOf("png", "jpg", "jpeg", "webp")) {
             val f = File(custom, "${game.stem}.$ext")
             if (f.exists()) decode(f)?.let { return@withContext it }
+        }
+        // your own art server (Settings > Library > Art server): real disc and cart scans for every system
+        if (server.isNotEmpty()) {
+            // keyed by the server, so art from one server is never taken for another's
+            val tag = Scanner.sha1(server).take(8)
+            val got = File(cache, "${game.id}.srv-$tag.png")
+            if (got.exists()) decode(got)?.let { return@withContext it }
+            val none = File(cache, "${game.id}.srv-$tag.miss")
+            if (allowNetwork && !(none.exists() && System.currentTimeMillis() - none.lastModified() < SERVER_RETRY_MS)) {
+                val bytes = try {
+                    fromServer(server, game, none)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+                bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }?.let { bmp ->
+                    got.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 95, it) }
+                    return@withContext scaled(bmp).asImageBitmap()
+                }
+            }
         }
         // Game Boy, Color and Advance: the real label from slot's own art server, matched by the ROM's CRC32
         if (game.system in SLOT_ART_SYSTEMS) {
@@ -98,6 +119,41 @@ class Covers(private val ctx: Context) {
 
     private fun scaled(b: Bitmap): Bitmap =
         if (b.width <= MAX_W) b else Bitmap.createScaledBitmap(b, MAX_W, (b.height * MAX_W.toFloat() / b.width).toInt().coerceAtLeast(1), true)
+
+    // --- your own art server (tools/art-server) --------------------------------------------------------
+
+    /**
+     * Asks your server for the game's label: `GET <server>/label/<system>/<rom file name>?size=..&crc=..`.
+     * 200 is the image, 404 means the server (and ScreenScraper behind it) has none, which is remembered in [none];
+     * anything else (server down, away from home) is not remembered, so it is asked again next time.
+     */
+    private fun fromServer(server: String, game: Game, none: File): ByteArray? {
+        val name = fileName(game) ?: return null
+        // carts are small enough to checksum, which lets the server match the exact dump; discs go by name
+        val crc = if (game.size in 1..MAX_CRC_BYTES) romCrc(game)?.let { "%08X".format(it) } else null
+        val url = "$server/label/${enc(game.system.id)}/${enc(name)}?size=${game.size}" + (crc?.let { "&crc=$it" } ?: "")
+        return try {
+            (URL(url).openConnection() as HttpURLConnection).run {
+                connectTimeout = 4000; readTimeout = 60000
+                setRequestProperty("User-Agent", AGENT)
+                val code = responseCode
+                when (code) {
+                    200 -> inputStream.use { it.readBytes() }
+                    404 -> { none.writeText("x"); null }
+                    else -> null
+                }.also { disconnect() }
+            }
+        } catch (_: java.io.IOException) {
+            null
+        }
+    }
+
+    /** The ROM's own file name ("Gran Turismo 4 (USA).iso"), from a file path or a folder document id. */
+    private fun fileName(game: Game): String? {
+        val uri = android.net.Uri.parse(game.uri)
+        val last = (if (uri.scheme == "file") uri.path else uri.lastPathSegment) ?: return null
+        return last.substringAfterLast('/').substringAfterLast(':').takeIf { it.isNotEmpty() }
+    }
 
     // --- slot's art server (art.slot-cfw.fyi) --------------------------------------------------------
 
@@ -305,6 +361,9 @@ class Covers(private val ctx: Context) {
         private const val SLOT_ART = "https://art.slot-cfw.fyi/"
         private val SLOT_ART_SYSTEMS = setOf(fyi.slot.ui.GameSystem.GB, fyi.slot.ui.GameSystem.GBC, fyi.slot.ui.GameSystem.GBA)
         private const val SLOT_INDEX_MS = 7L * 24 * 3600 * 1000
+        /** A game your art server had nothing for is asked again after this long (you may have added art since). */
+        private const val SERVER_RETRY_MS = 3L * 24 * 3600 * 1000
+        private const val MAX_CRC_BYTES = 64L * 1024 * 1024
         private val NOT_ALNUM = Regex("[^A-Za-z0-9]+")
         private const val RETRY_MS = 7L * 24 * 3600 * 1000
         private const val INDEX_MS = 30L * 24 * 3600 * 1000
