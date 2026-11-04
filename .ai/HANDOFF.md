@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.13** (`versionCode` 14) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.13` with `slot-android-0.1.13.apk` attached. Everything the user asked for so far is
+Version **0.1.14** (`versionCode` 15) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.14` with `slot-android-0.1.14.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -50,6 +50,8 @@ emulator); cart size and drawer options; touch scrolling in menus; backup of cho
 - `README.md` user documentation (kept in sync with every feature). `AGENTS.md`, `CLAUDE.md`, `.ai/*` added now.
 
 ## Work in Progress
+
+- Update: PSX video now fills portrait width (0.54 height for disc/N64 systems); N64 zips are unpacked in RomFiles (most of the user's N64 games are .zip); Flycast needs dc_boot.bin (HLE BIOS draws nothing) so Slot copies it from the DC folder or falls back to Redream. Built-in cores (UNCOMMITTED, NOT released): pcsx_rearmed (PSX), mupen64plus_next_gles3 (N64), ppsspp (PSP), flycast (DC) bundled via scripts/fetch-cores.sh; `CoreChoice.external` flag, `Game.external`; first core of each system is now the built-in one; MANAGE_EXTERNAL_STORAGE + largeHeap added; `RomFiles.materialize` uses the real path for discs/N64; touch layouts for PSX/PS2/DC/PSP/N64 (analog stick, C buttons via `onStick`); L2/R2 passed to games on those systems and rewind disabled there. Tested on the tablet: PSX (Colin McRae Rally 2) and PSP boot and show video, N64 (1080) plays, DC boots on HLE BIOS but stays black (needs dc_boot.bin in files/system/dc). Not done: PS2/GC in-app emulators (not possible as libretro cores on these devices), BIOS handling, audio checks, per-system tuning.
 
 - Save export/import, per-game download/upload (0.1.13): `SaveTransfer.kt`, Settings > Saves. Zip layout `saves/<system>/<game>.srm` and `states/<system>/<game>/slotN.*`, matched by system + game name because ids differ per device. Verified on the tablet: per-game export produced the expected zip and per-game import wrote the save plus a .bak. Export-all and import-all (name matching across devices) were not run.
 

@@ -47,7 +47,7 @@ object SaveTransfer {
     }
 
     /** Every emulated game that has a save. */
-    fun exportAll(ctx: Context, games: List<Game>, out: OutputStream) = write(ctx, games.filter { !it.system.external }, out)
+    fun exportAll(ctx: Context, games: List<Game>, out: OutputStream) = write(ctx, games.filter { !it.external }, out)
 
     fun exportGame(ctx: Context, game: Game, out: OutputStream) = write(ctx, listOf(game), out)
 
@@ -82,7 +82,7 @@ object SaveTransfer {
 
     /** Puts a whole export back: each save goes to the game with the same system and name on this device. */
     fun importAll(ctx: Context, games: List<Game>, input: InputStream): Result {
-        val byKey = games.filter { !it.system.external }.associateBy { it.system.id + "/" + safe(it.stem) }
+        val byKey = games.filter { !it.external }.associateBy { it.system.id + "/" + safe(it.stem) }
         val matched = HashSet<String>()
         var files = 0
         var skipped = 0

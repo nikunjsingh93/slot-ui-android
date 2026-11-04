@@ -99,6 +99,8 @@ interface SlotHost {
     fun onAction(action: GameAction) {}
     /** Touch overlay button for the running game. */
     fun onButton(pad: Pad, down: Boolean) {}
+    /** On-screen analog stick: left (N64 stick) or right (N64 C buttons), each axis -1..1. */
+    fun onStick(right: Boolean, x: Float, y: Float) {}
     fun sfx(effect: Sfx) {}
 }
 

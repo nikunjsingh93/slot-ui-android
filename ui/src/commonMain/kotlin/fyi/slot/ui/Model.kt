@@ -5,7 +5,8 @@ import androidx.compose.ui.graphics.Color
 /** Physical cart silhouette family. */
 enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD, N64, DISC_PSX, DISC_PS2, DISC_GC, DISC_DC, UMD, APP_CARD }
 
-data class CoreChoice(val id: String, val name: String, val tagline: String)
+/** [external] cores open an installed emulator app; the others are libretro cores bundled in slot. */
+data class CoreChoice(val id: String, val name: String, val tagline: String, val external: Boolean = false)
 
 enum class GameSystem(
     val id: String,
@@ -89,7 +90,10 @@ enum class GameSystem(
     PSX(
         "psx", "PlayStation", "PSX", CartShape.DISC_PSX, setOf("cue", "chd", "pbp", "iso", "img", "m3u", "bin", "ecm"),
         "Sony - PlayStation",
-        listOf(CoreChoice("duckstation", "DuckStation", "Opens your installed DuckStation.")),
+        listOf(
+            CoreChoice("pcsx_rearmed", "PCSX ReARMed", "Built in. Fast and light."),
+            CoreChoice("duckstation", "DuckStation", "Opens your installed DuckStation.", external = true),
+        ),
         "PlayStation", Color(0xFF9AA0B8),
         external = true, uniqueExt = emptySet(),
     ),
@@ -97,8 +101,8 @@ enum class GameSystem(
         "ps2", "PlayStation 2", "PS2", CartShape.DISC_PS2, setOf("iso", "chd", "cso", "zso", "cue", "bin", "gz"),
         "Sony - PlayStation 2",
         listOf(
-            CoreChoice("aethersx2", "AetherSX2", "Opens your installed AetherSX2 / NetherSX2."),
-            CoreChoice("armsx2", "ARMSX2", "Opens your installed ARMSX2."),
+            CoreChoice("aethersx2", "AetherSX2", "Opens your installed AetherSX2 / NetherSX2.", external = true),
+            CoreChoice("armsx2", "ARMSX2", "Opens your installed ARMSX2.", external = true),
         ),
         "PlayStation 2", Color(0xFF2A4BA0),
         external = true, uniqueExt = setOf("cso", "zso"),
@@ -106,7 +110,10 @@ enum class GameSystem(
     N64(
         "n64", "Nintendo 64", "N64", CartShape.N64, setOf("z64", "n64", "v64", "zip", "7z", "ndd"),
         "Nintendo - Nintendo 64",
-        listOf(CoreChoice("mupen64fz", "M64Plus FZ", "Opens your installed M64Plus FZ.")),
+        listOf(
+            CoreChoice("mupen64plus_next_gles3", "Mupen64Plus-Next", "Built in. Accurate N64."),
+            CoreChoice("mupen64fz", "M64Plus FZ", "Opens your installed M64Plus FZ.", external = true),
+        ),
         "NINTENDO 64", Color(0xFF8E8E96),
         external = true, uniqueExt = setOf("z64", "n64", "v64", "ndd"),
     ),
@@ -114,8 +121,8 @@ enum class GameSystem(
         "gc", "GameCube", "GC", CartShape.DISC_GC, setOf("iso", "gcm", "ciso", "gcz", "rvz", "wbfs", "wia", "tgc"),
         "Nintendo - GameCube",
         listOf(
-            CoreChoice("dolphin", "Dolphin", "Opens your installed Dolphin."),
-            CoreChoice("dolphin_mmjr", "Dolphin MMJR", "Opens your installed Dolphin MMJR."),
+            CoreChoice("dolphin", "Dolphin", "Opens your installed Dolphin.", external = true),
+            CoreChoice("dolphin_mmjr", "Dolphin MMJR", "Opens your installed Dolphin MMJR.", external = true),
         ),
         "GAMECUBE", Color(0xFF6A5ACD),
         external = true, uniqueExt = setOf("gcm", "ciso", "gcz", "rvz", "tgc"),
@@ -123,28 +130,34 @@ enum class GameSystem(
     PSP(
         "psp", "PSP", "PSP", CartShape.UMD, setOf("iso", "cso", "pbp", "chd"),
         "Sony - PlayStation Portable",
-        listOf(CoreChoice("ppsspp", "PPSSPP", "Opens your installed PPSSPP.")),
+        listOf(
+            CoreChoice("ppsspp", "PPSSPP", "Built in."),
+            CoreChoice("ppsspp_app", "PPSSPP app", "Opens your installed PPSSPP.", external = true),
+        ),
         "PlayStation Portable", Color(0xFF3E6BB0),
         external = true, uniqueExt = setOf("cso"),
     ),
     DC(
         "dc", "Dreamcast", "DC", CartShape.DISC_DC, setOf("gdi", "cdi", "chd", "cue", "m3u"),
         "Sega - Dreamcast",
-        listOf(CoreChoice("redream", "Redream", "Opens your installed Redream.")),
+        listOf(
+            CoreChoice("redream", "Redream", "Opens your installed Redream.", external = true),
+            CoreChoice("flycast", "Flycast", "Built in, experimental: black screen on some devices."),
+        ),
         "DREAMCAST", Color(0xFFE8631A),
         external = true, uniqueExt = setOf("gdi", "cdi"),
     ),
     /** Android apps you chose to show as plain apps. */
     APPS(
         "apps", "Apps", "Apps", CartShape.APP_CARD, emptySet(),
-        "", listOf(CoreChoice("app", "Android app", "Opens the app.")),
+        "", listOf(CoreChoice("app", "Android app", "Opens the app.", external = true)),
         "APP", Color(0xFF8BD3A4),
         external = true, uniqueExt = emptySet(),
     ),
     /** Android games you chose to show. */
     INSTALLED(
         "installed", "Installed", "Installed", CartShape.APP_CARD, emptySet(),
-        "", listOf(CoreChoice("app", "Android game", "Opens the game.")),
+        "", listOf(CoreChoice("app", "Android game", "Opens the game.", external = true)),
         "GAME", Color(0xFFE5534B),
         external = true, uniqueExt = emptySet(),
     );
@@ -222,6 +235,8 @@ data class Game(
 ) {
     val title: String get() = cleanLabel(stem)
     val core: CoreChoice get() = system.cores.firstOrNull { it.id == coreId } ?: system.cores.first()
+    /** True when this game opens in an installed emulator app rather than a core bundled in slot. */
+    val external: Boolean get() = core.external
 }
 
 /** Strip (region) and [tags] and collapse spaces, as slot's cart.rs clean_label does. */

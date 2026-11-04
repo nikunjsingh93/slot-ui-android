@@ -267,9 +267,11 @@ private fun PolaroidCard(s: StateSlot, selected: Boolean, scale: Float, w: Float
 
 // --- touch controls ---------------------------------------------------------------------------------
 
-internal class TouchButtonSpec(val pad: Pad, val cx: Float, val cy: Float, val r: Float, val label: String)
+/** [cDir] marks an N64 C button (0 up, 1 down, 2 left, 3 right), which pushes the right stick instead of pressing [pad]. */
+internal class TouchButtonSpec(val pad: Pad, val cx: Float, val cy: Float, val r: Float, val label: String, val cDir: Int = -1)
 
-internal class TouchLayout(val dpadCx: Float, val dpadCy: Float, val dpadR: Float, val buttons: List<TouchButtonSpec>, val pills: List<Triple<Pad, Rectish, String>>)
+/** [analog]: the left control is a stick (N64) rather than a d-pad. */
+internal class TouchLayout(val dpadCx: Float, val dpadCy: Float, val dpadR: Float, val buttons: List<TouchButtonSpec>, val pills: List<Triple<Pad, Rectish, String>>, val analog: Boolean = false)
 
 internal data class Rectish(val l: Float, val t: Float, val r: Float, val b: Float) {
     fun contains(p: Offset, slack: Float) = p.x in (l - slack)..(r + slack) && p.y in (t - slack)..(b + slack)
@@ -295,6 +297,24 @@ internal fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Float> = TOUCH_D
             btns += TouchButtonSpec(Pad.X, cx, cy - 50 * u, r, "X")
             btns += TouchButtonSpec(Pad.Y, cx - 52 * u, cy, r, "Y")
         }
+        CartShape.DISC_PSX, CartShape.DISC_PS2, CartShape.DISC_DC, CartShape.UMD -> {
+            // PlayStation names: Circle is the RetroPad A, Cross B, Square Y, Triangle X
+            btns += TouchButtonSpec(Pad.A, cx + 52 * u, cy, r, "O")
+            btns += TouchButtonSpec(Pad.B, cx, cy + 50 * u, r, "X")
+            btns += TouchButtonSpec(Pad.Y, cx - 52 * u, cy, r, "Sq")
+            btns += TouchButtonSpec(Pad.X, cx, cy - 50 * u, r, "Tr")
+        }
+        CartShape.N64 -> {
+            btns += TouchButtonSpec(Pad.B, cx + 40 * u, cy + 14 * u, r, "A")
+            btns += TouchButtonSpec(Pad.Y, cx - 24 * u, cy + 34 * u, r, "B")
+            val cr = r * .62f
+            val ccx = cx + 6 * u
+            val ccy = cy - 78 * u
+            btns += TouchButtonSpec(Pad.Menu, ccx, ccy - 34 * u, cr, "CU", 0)
+            btns += TouchButtonSpec(Pad.Menu, ccx, ccy + 34 * u, cr, "CD", 1)
+            btns += TouchButtonSpec(Pad.Menu, ccx - 34 * u, ccy, cr, "CL", 2)
+            btns += TouchButtonSpec(Pad.Menu, ccx + 34 * u, ccy, cr, "CR", 3)
+        }
         CartShape.GENESIS -> {
             btns += TouchButtonSpec(Pad.B, cx + 58 * u, cy - 6 * u, r, "C")
             btns += TouchButtonSpec(Pad.A, cx + 4 * u, cy + 22 * u, r, "B")
@@ -312,15 +332,20 @@ internal fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Float> = TOUCH_D
     val pcx = w / 2f
     pills += Triple(Pad.Select, Rectish(pcx - pw - 12 * u, py, pcx - 12 * u, py + ph), "SELECT")
     pills += Triple(Pad.Start, Rectish(pcx + 12 * u, py, pcx + pw + 12 * u, py + ph), "START")
-    val shoulder = sys.shape in setOf(CartShape.GBA, CartShape.SNES, CartShape.GENESIS)
+    val shoulder = sys.shape in setOf(CartShape.GBA, CartShape.SNES, CartShape.GENESIS, CartShape.DISC_PSX, CartShape.DISC_PS2, CartShape.DISC_DC, CartShape.UMD, CartShape.N64)
     if (shoulder) {
         pills += Triple(Pad.L1, Rectish(14 * u, 14 * u, 14 * u + 86 * u, 14 * u + 34 * u), "L")
         pills += Triple(Pad.R1, Rectish(w - 14 * u - 86 * u, 14 * u, w - 14 * u, 14 * u + 34 * u), "R")
     }
+    if (sys.shape in setOf(CartShape.DISC_PSX, CartShape.DISC_PS2, CartShape.DISC_DC, CartShape.N64)) {
+        // second shoulder row (L2/R2, or Z on N64)
+        pills += Triple(Pad.L2, Rectish(14 * u, 54 * u, 14 * u + 86 * u, 54 * u + 34 * u), if (sys.shape == CartShape.N64) "Z" else "L2")
+        if (sys.shape != CartShape.N64) pills += Triple(Pad.R2, Rectish(w - 14 * u - 86 * u, 54 * u, w - 14 * u, 54 * u + 34 * u), "R2")
+    }
     pills += Triple(Pad.Menu, Rectish(pcx - 28 * u, 12 * u, pcx + 28 * u, 12 * u + 24 * u), "MENU")
     val t = if (tweak.size == 6) tweak else TOUCH_DEFAULT
-    val scaled = btns.map { b -> TouchButtonSpec(b.pad, cx + (b.cx - cx) * t[3] + t[4] * w, cy + (b.cy - cy) * t[3] + t[5] * h, b.r * t[3], b.label) }
-    return TouchLayout(dpadCx + t[1] * w, dpadCy + t[2] * h, dpadR * t[0], scaled, pills)
+    val scaled = btns.map { b -> TouchButtonSpec(b.pad, cx + (b.cx - cx) * t[3] + t[4] * w, cy + (b.cy - cy) * t[3] + t[5] * h, b.r * t[3], b.label, b.cDir) }
+    return TouchLayout(dpadCx + t[1] * w, dpadCy + t[2] * h, dpadR * t[0], scaled, pills, analog = sys.shape == CartShape.N64)
 }
 
 @Composable
@@ -328,16 +353,37 @@ fun TouchControls(state: SlotState, sys: GameSystem, m: Metrics) {
     val tweak = state.settings.touchTweaks[sys.id] ?: TOUCH_DEFAULT
     val layout = remember(sys, m, tweak) { layoutFor(sys, m, tweak) }
     var pressed by remember { mutableStateOf(emptySet<Pad>()) }
+    var stick by remember { mutableStateOf(Offset.Zero) }
     Box(
         Modifier.fillMaxSize().pointerInput(layout) {
             awaitPointerEventScope {
                 var current = emptySet<Pad>()
+                var lastLeft = Offset.Zero
+                var lastRight = Offset.Zero
                 while (true) {
                     val ev = awaitPointerEvent()
                     val now = HashSet<Pad>()
+                    var left = Offset.Zero
+                    var right = Offset.Zero
                     for (c in ev.changes) {
-                        if (c.pressed) now += hit(layout, c.position)
+                        if (c.pressed) {
+                            now += hit(layout, c.position)
+                            if (layout.analog) {
+                                val dx = c.position.x - layout.dpadCx
+                                val dy = c.position.y - layout.dpadCy
+                                val d = kotlin.math.hypot(dx, dy)
+                                if (d < layout.dpadR * 1.6f) { val k = if (d > layout.dpadR) layout.dpadR / d else 1f; left = Offset(dx * k / layout.dpadR, dy * k / layout.dpadR) }
+                            }
+                            for (b in layout.buttons) if (b.cDir >= 0 && kotlin.math.hypot(c.position.x - b.cx, c.position.y - b.cy) < b.r * 1.4f) {
+                                right += when (b.cDir) { 0 -> Offset(0f, -1f); 1 -> Offset(0f, 1f); 2 -> Offset(-1f, 0f); else -> Offset(1f, 0f) }
+                            }
+                        }
                         c.consume()
+                    }
+                    if (layout.analog && (left != lastLeft || right != lastRight)) {
+                        if (left != lastLeft) state.host.onStick(false, left.x, left.y)
+                        if (right != lastRight) state.host.onStick(true, right.x.coerceIn(-1f, 1f), right.y.coerceIn(-1f, 1f))
+                        lastLeft = left; lastRight = right; stick = left
                     }
                     if (now != current) {
                         for (p in current - now) {
@@ -354,7 +400,7 @@ fun TouchControls(state: SlotState, sys: GameSystem, m: Metrics) {
             }
         },
     ) {
-        TouchArt(layout, pressed, m)
+        TouchArt(layout, pressed, m, stick)
     }
 }
 
@@ -363,24 +409,30 @@ private fun hit(l: TouchLayout, p: Offset): Set<Pad> {
     val dx = p.x - l.dpadCx
     val dy = p.y - l.dpadCy
     val dist = kotlin.math.hypot(dx, dy)
-    if (dist < l.dpadR * 1.35f && dist > l.dpadR * .16f) {
+    if (!l.analog && dist < l.dpadR * 1.35f && dist > l.dpadR * .16f) {
         if (dx / dist > .38f) out += Pad.Right
         if (dx / dist < -.38f) out += Pad.Left
         if (dy / dist > .38f) out += Pad.Down
         if (dy / dist < -.38f) out += Pad.Up
     }
-    for (b in l.buttons) if (kotlin.math.hypot(p.x - b.cx, p.y - b.cy) < b.r * 1.3f) out += b.pad
+    for (b in l.buttons) if (b.cDir < 0 && kotlin.math.hypot(p.x - b.cx, p.y - b.cy) < b.r * 1.3f) out += b.pad
     for ((pad, r, _) in l.pills) if (r.contains(p, 8f)) out += pad
     return out
 }
 
-internal fun DrawScope.drawTouch(l: TouchLayout, pressed: Set<Pad>, m: Metrics) {
+internal fun DrawScope.drawTouch(l: TouchLayout, pressed: Set<Pad>, m: Metrics, stick: Offset = Offset.Zero) {
     val u = m.u
     val base = Color.White
+    if (l.analog) {
+        val c = Offset(l.dpadCx, l.dpadCy)
+        drawCircle(base.copy(alpha = .16f), l.dpadR, c)
+        drawCircle(base.copy(alpha = .38f), l.dpadR, c, style = Stroke(1.6f * u))
+        drawCircle(base.copy(alpha = .5f), l.dpadR * .42f, Offset(c.x + stick.x * l.dpadR * .6f, c.y + stick.y * l.dpadR * .6f))
+    }
     // d-pad
     val arm = l.dpadR * .36f
     val len = l.dpadR
-    val path = androidx.compose.ui.graphics.Path().apply {
+    val path = if (l.analog) androidx.compose.ui.graphics.Path() else androidx.compose.ui.graphics.Path().apply {
         addRoundRect(androidx.compose.ui.geometry.RoundRect(l.dpadCx - len, l.dpadCy - arm, l.dpadCx + len, l.dpadCy + arm, CornerRadius(arm * .5f)))
         addRoundRect(androidx.compose.ui.geometry.RoundRect(l.dpadCx - arm, l.dpadCy - len, l.dpadCx + arm, l.dpadCy + len, CornerRadius(arm * .5f)))
     }
@@ -398,7 +450,7 @@ internal fun DrawScope.drawTouch(l: TouchLayout, pressed: Set<Pad>, m: Metrics) 
         }
         drawPath(tri, base.copy(alpha = if (on) .95f else .55f))
     }
-    arrow(Pad.Left, -1f, 0f); arrow(Pad.Right, 1f, 0f); arrow(Pad.Up, 0f, -1f); arrow(Pad.Down, 0f, 1f)
+    if (!l.analog) { arrow(Pad.Left, -1f, 0f); arrow(Pad.Right, 1f, 0f); arrow(Pad.Up, 0f, -1f); arrow(Pad.Down, 0f, 1f) }
 
     for (b in l.buttons) {
         val on = b.pad in pressed
@@ -414,9 +466,9 @@ internal fun DrawScope.drawTouch(l: TouchLayout, pressed: Set<Pad>, m: Metrics) 
 
 /** The on-screen buttons as drawn during play (also used by the layout editor). */
 @Composable
-internal fun TouchArt(layout: TouchLayout, pressed: Set<Pad>, m: Metrics) {
+internal fun TouchArt(layout: TouchLayout, pressed: Set<Pad>, m: Metrics, stick: Offset = Offset.Zero) {
     Box(Modifier.fillMaxSize()) {
-        Canvas(Modifier.fillMaxSize()) { drawTouch(layout, pressed, m) }
+        Canvas(Modifier.fillMaxSize()) { drawTouch(layout, pressed, m, stick) }
         for (b in layout.buttons) {
             Box(
                 Modifier.offset { IntOffset((b.cx - b.r).roundToInt(), (b.cy - b.r).roundToInt()) }

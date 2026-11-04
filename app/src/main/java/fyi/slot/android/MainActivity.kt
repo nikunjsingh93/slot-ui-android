@@ -298,9 +298,45 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     // --- SlotHost --------------------------------------------------------------------------------
 
+    /** True when dc_boot.bin is in slot's system folder, copying it (and dc_flash.bin) from the game's folder if needed. */
+    private fun dreamcastBios(game: Game): Boolean {
+        val dest = java.io.File(getExternalFilesDir(null), "system/dc").also { it.mkdirs() }
+        val boot = java.io.File(dest, "dc_boot.bin")
+        if (boot.exists()) return true
+        val folder = ExternalLauncher.pathOf(game)?.let { java.io.File(it) }?.parentFile ?: return false
+        for (dir in listOf(folder, java.io.File(folder, "dc"), java.io.File(folder, "bios"), folder.parentFile?.let { java.io.File(it, "bios") })) {
+            val src = dir?.let { java.io.File(it, "dc_boot.bin") }?.takeIf { it.canRead() } ?: continue
+            src.copyTo(boot, overwrite = true)
+            java.io.File(dir, "dc_flash.bin").takeIf { it.canRead() }?.copyTo(java.io.File(dest, "dc_flash.bin"), overwrite = true)
+            return true
+        }
+        return false
+    }
+
     override fun onLaunch(game: Game, resume: Boolean) {
         Persist.updateMeta(this, game.id, played = System.currentTimeMillis())
-        if (game.system.external) { launchExternal(game); return }
+        if (game.external) { launchExternal(game); return }
+        // Flycast needs a real Dreamcast BIOS (the built-in substitute does not get games to draw). Look for it in the
+        // game's folder; without one, hand the game to Redream, which needs none.
+        if (game.core.id == "flycast" && !dreamcastBios(game)) {
+            if (!ExternalLauncher.isInstalled(this, "io.recompiled.redream")) {
+                state.ejected()
+                state.toast("Dreamcast needs a BIOS: put dc_boot.bin and dc_flash.bin in your DC folder, or install Redream")
+                return
+            }
+            state.toast("No Dreamcast BIOS found, opening Redream")
+            launchExternal(game)
+            return
+        }
+        // bundled cores read disc images and N64 files where they are, which needs "all files access" once
+        if (game.system.external && game.entryName.isEmpty() && !android.os.Environment.isExternalStorageManager()) {
+            state.ejected()
+            state.toast("Allow \"All files access\" for slot, then pick the game again")
+            runCatching {
+                startActivity(Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName")))
+            }
+            return
+        }
         val i = Intent(this, GameActivity::class.java)
             .putExtra(GameActivity.EXTRA_ID, game.id).putExtra(GameActivity.EXTRA_STEM, game.stem)
             .putExtra(GameActivity.EXTRA_SYSTEM, game.system.id).putExtra(GameActivity.EXTRA_URI, game.uri)

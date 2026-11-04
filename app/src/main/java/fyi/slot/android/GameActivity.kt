@@ -76,6 +76,13 @@ class GameActivity : ComponentActivity(), SlotHost {
     private var emuPaused = false
     private var ejecting = false
     private var lastShot: Bitmap? = null
+    /** Disc and N64 systems use L2/R2 as real buttons, so rewind and fast-forward stay off them. */
+    private val triggersAreButtons get() = game.system.external
+
+    private fun passKey(v: GLRetroView, pad: Pad, down: Boolean) {
+        KeyMap.padToKey(pad, false)?.let { v.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, it, 0) }
+    }
+
     private var rewinding = false
     private val rewindBuf = ArrayDeque<ByteArray>()
     private var ffHeld = false
@@ -125,7 +132,7 @@ class GameActivity : ComponentActivity(), SlotHost {
                 retro?.let { view ->
                     AndroidView(
                         factory = { view },
-                        modifier = if (portrait && touchVisible()) Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.03f * state.settings.portraitScreenStep)).fillMaxWidth().fillMaxHeight(0.46f) else Modifier.fillMaxSize(),
+                        modifier = if (portrait && touchVisible()) Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.03f * state.settings.portraitScreenStep)).fillMaxWidth().fillMaxHeight(if (game.system.external) 0.54f else 0.46f) else Modifier.fillMaxSize(),
                     )
                 }
                 SlotRoot(state, gameProcess = true)
@@ -250,7 +257,7 @@ class GameActivity : ComponentActivity(), SlotHost {
                     if (s != null) runCatching { view.unserializeState(s) }
                     continue
                 }
-                if (settings.rewind) {
+                if (settings.rewind && !triggersAreButtons) {
                     runCatching { view.serializeState() }.getOrNull()?.let {
                         rewindBuf.addLast(it)
                         while (rewindBuf.size > REWIND_FRAMES) rewindBuf.removeFirst()
@@ -426,11 +433,15 @@ class GameActivity : ComponentActivity(), SlotHost {
 
     // --- touch overlay -----------------------------------------------------------------------------------
 
+    override fun onStick(right: Boolean, x: Float, y: Float) {
+        retro?.sendMotionEvent(if (right) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y, 0)
+    }
+
     override fun onButton(pad: Pad, down: Boolean) {
         val v = retro ?: return
         when (pad) {
-            Pad.L2 -> rewinding = down && settings.rewind
-            Pad.R2 -> { ffHeld = down; applyFastForward() }
+            Pad.L2 -> if (triggersAreButtons) passKey(v, pad, down) else rewinding = down && settings.rewind
+            Pad.R2 -> if (triggersAreButtons) passKey(v, pad, down) else { ffHeld = down; applyFastForward() }
             else -> KeyMap.padToKey(pad, false)?.let {
                 v.sendKeyEvent(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, it, 0)
             }
@@ -468,7 +479,7 @@ class GameActivity : ComponentActivity(), SlotHost {
         if (down && e.repeatCount > 0) return true
         val port = max(0, (e.device?.controllerNumber ?: 1) - 1)
         val key = KeyMap.emuKey(e.keyCode, swap)
-        when (e.keyCode) {
+        when (if (triggersAreButtons) 0 else e.keyCode) {
             KeyEvent.KEYCODE_BUTTON_L2 -> { rewinding = down && settings.rewind; return true }
             KeyEvent.KEYCODE_BUTTON_R2 -> {
                 if (down) {
@@ -527,8 +538,8 @@ class GameActivity : ComponentActivity(), SlotHost {
         // some pads report triggers only as axes
         val lt = max(ev.getAxisValue(MotionEvent.AXIS_LTRIGGER), ev.getAxisValue(MotionEvent.AXIS_BRAKE))
         val rt = max(ev.getAxisValue(MotionEvent.AXIS_RTRIGGER), ev.getAxisValue(MotionEvent.AXIS_GAS))
-        rewinding = lt > .6f && settings.rewind
-        if ((rt > .6f) != ffHeld) { ffHeld = rt > .6f; applyFastForward() }
+        if (!triggersAreButtons) rewinding = lt > .6f && settings.rewind
+        if (!triggersAreButtons && (rt > .6f) != ffHeld) { ffHeld = rt > .6f; applyFastForward() }
         return true
     }
 

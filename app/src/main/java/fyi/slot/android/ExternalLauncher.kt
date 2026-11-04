@@ -42,7 +42,7 @@ object ExternalLauncher {
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.dolphinemu.mmjr", "org.dolphinemu.dolphinemu.ui.main.MainActivity").putExtra("AutoStartFile", path)
         },
         // PPSSPP: an "open this file" request with the plain path
-        Emulator("ppsspp", "org.ppsspp.ppsspp", "PPSSPP") { _, path, uri ->
+        Emulator("ppsspp_app", "org.ppsspp.ppsspp", "PPSSPP") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.ppsspp.ppsspp", "org.ppsspp.ppsspp.PpssppActivity")
         },
         // Redream: same, it opens whatever string it is given as a path

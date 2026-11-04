@@ -32,6 +32,10 @@ object CoreOptions {
                 v += Variable("mgba_skip_bios", "ON")
                 if (gb) mgbaPalette(s.gbPalette)?.let { v += Variable("mgba_gb_colors", it) }
             }
+            "flycast" -> {
+                v += Variable("flycast_threaded_rendering", "disabled")
+                v += Variable("flycast_internal_resolution", "640x480")
+            }
             "gambatte" -> {
                 v += Variable("gambatte_gbc_color_correction", if (s.colorCorrection) "accurate" else "disabled")
                 val pal = gambattePalette(s.gbPalette)

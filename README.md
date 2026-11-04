@@ -84,6 +84,7 @@ the app is uninstalled; updates keep them.
 
 ## Systems that open your own emulators
 
+- **Built-in emulators:** PlayStation (PCSX ReARMed), N64 (Mupen64Plus-Next), PSP (PPSSPP) and Dreamcast (Flycast, experimental) run inside slot. They read games where they are, so slot asks once for "All files access". The installed emulator apps remain a second choice (START, or Settings > Emulators). N64 games in a zip are unpacked automatically. Dreamcast defaults to Redream because Flycast shows only a black screen on the devices tested; to try it anyway, put `dc_boot.bin` and `dc_flash.bin` in your Dreamcast folder. PlayStation 2 and GameCube still open ARMSX2/AetherSX2 and Dolphin.
 Discs and cartridges slot doesn't emulate itself are launched in the emulator app you already have. Put games in a
 folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`/`Dreamcast`, in almost any spelling) inside the ROM folder you picked.
 

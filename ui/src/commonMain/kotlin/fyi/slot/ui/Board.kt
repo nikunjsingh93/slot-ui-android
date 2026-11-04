@@ -152,13 +152,13 @@ fun CorePicker(state: SlotState, m: Metrics, assets: CartAssets, screen: Screen.
             if (state.gamepad) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16f.udp())) {
                     if (game.system.cores.size > 1) Hint("◀▶", "Choose")
-                    Hint("A", "Insert"); if (!game.system.external) Hint("X", "New game"); Hint("B", "Back")
+                    Hint("A", "Insert"); if (!core.external) Hint("X", "New game"); Hint("B", "Back")
                 }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(10f.udp())) {
                     TouchButton("Back") { state.closeCorePicker() }
                     TouchButton("Insert") { state.insert(game, true) }
-                    if (!game.system.external) TouchButton("New game") { state.insert(game, false) }
+                    if (!game.system.cores[screen.chip.coerceIn(0, game.system.cores.lastIndex)].external) TouchButton("New game") { state.insert(game, false) }
                 }
             }
         }

@@ -57,7 +57,7 @@ private fun SlotState.gameplayPage(): MenuPage = MenuPage(
 
 /** Settings > Saves: move game saves to another device as a zip, for everything or for the selected game. */
 private fun SlotState.savesPage(): MenuPage {
-    val g = current?.takeIf { !it.system.external }
+    val g = current?.takeIf { !it.external }
     val rows = mutableListOf<MenuItem>(
         MenuAction("Export all saves", "Zip of every game") { host.onExportSaves(null); closeOverlay() },
         MenuAction("Import saves", "From a zip") { host.onImportSaves(null); closeOverlay() },
@@ -72,7 +72,7 @@ private fun SlotState.savesPage(): MenuPage {
 /** Settings > Controls > Edit button layout: pick a system, then drag and pinch its buttons into place. */
 private fun SlotState.touchPage(): MenuPage = MenuPage(
     "Edit button layout",
-    GameSystem.entries.filter { !it.external }.map { sys -> MenuAction(sys.title) { openLayoutEditor(sys) } },
+    GameSystem.entries.filter { s -> s.cores.any { !it.external } }.map { sys -> MenuAction(sys.title) { openLayoutEditor(sys) } },
     subtitle = "Choose a system",
 )
 
