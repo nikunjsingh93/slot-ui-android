@@ -10,6 +10,7 @@ private fun SlotState.update(f: (Settings) -> Settings) {
 }
 
 private val onOff = listOf("Off", "On")
+private val PORTRAIT_POSITIONS = listOf("Top", "Down 1", "Down 2", "Down 3 (default)", "Down 4", "Down 5")
 
 private fun SlotState.screenPage(forSystem: GameSystem?): MenuPage {
     val items = mutableListOf<MenuItem>()
@@ -26,6 +27,7 @@ private fun SlotState.screenPage(forSystem: GameSystem?): MenuPage {
         else -> items += shaderChoice("Shader", { settings.otherShader }) { s -> update { it.copy(otherShader = s) } }
     }
     items += MenuToggle("Colour correction", { settings.colorCorrection }) { v -> update { it.copy(colorCorrection = v) } }
+    items += MenuChoice("Screen position (portrait)", PORTRAIT_POSITIONS, { settings.portraitScreenStep }) { i -> update { it.copy(portraitScreenStep = i) } }
     if (forSystem == null || forSystem.shape == CartShape.GB || forSystem.shape == CartShape.GBC) {
         items += MenuChoice(
             "Game Boy palette", GB_PALETTES, { GB_PALETTES.indexOf(settings.gbPalette).coerceAtLeast(0) },

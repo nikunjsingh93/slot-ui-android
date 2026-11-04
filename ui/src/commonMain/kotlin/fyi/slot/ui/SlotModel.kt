@@ -51,6 +51,8 @@ data class Settings(
     val drawerSize: DrawerSize = DrawerSize.Medium,
     /** Settings > Emulators: system id -> the core or emulator used unless a game has its own choice. */
     val defaultCores: Map<String, String> = emptyMap(),
+    /** Portrait play with on-screen controls: how far the game picture sits below the top edge, 0..5 steps of 3% of the screen height. */
+    val portraitScreenStep: Int = 3,
 )
 
 enum class TouchMode(val label: String) { Auto("When no controller"), Always("Always"), Never("Never") }

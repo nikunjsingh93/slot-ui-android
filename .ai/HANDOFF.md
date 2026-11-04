@@ -2,13 +2,13 @@
 
 ## Last Updated
 
-Date: 2026-10-26
+Date: 2026-11-03
 Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.9** (`versionCode` 10) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.9` with `slot-android-0.1.9.apk` attached. Everything the user asked for so far is
+Version **0.1.10** (`versionCode` 11) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.10` with `slot-android-0.1.10.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -19,6 +19,8 @@ cover art with fuzzy matching and a Wikipedia fallback; Settings > Emulators (de
 emulator); cart size and drawer options; touch scrolling in menus; backup of choices in the ROM folder; fixed signing key.
 
 ## Recently Completed (newest first, all in git history)
+
+- Portrait game picture moved down by default; `Settings.portraitScreenStep` (0-5, 3% of height each, default 3), Settings > Screen (0.1.10). Tested on a 1000x1524 tablet.
 
 - Dolphin MMJR2 opened its menu instead of the game: Dolphin launches now also pass the `AutoStartFile` extra (0.1.9).
 

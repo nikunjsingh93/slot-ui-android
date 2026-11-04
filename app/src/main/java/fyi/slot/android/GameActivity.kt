@@ -18,6 +18,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -124,7 +125,7 @@ class GameActivity : ComponentActivity(), SlotHost {
                 retro?.let { view ->
                     AndroidView(
                         factory = { view },
-                        modifier = if (portrait && touchVisible()) Modifier.align(Alignment.TopCenter).fillMaxWidth().fillMaxHeight(0.46f) else Modifier.fillMaxSize(),
+                        modifier = if (portrait && touchVisible()) Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.03f * state.settings.portraitScreenStep)).fillMaxWidth().fillMaxHeight(0.46f) else Modifier.fillMaxSize(),
                     )
                 }
                 SlotRoot(state, gameProcess = true)
