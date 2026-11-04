@@ -281,18 +281,30 @@ class MainActivity : ComponentActivity(), SlotHost {
         }
     }
 
-    private suspend fun loadCoversAround() {
+    /** Covers being loaded right now, so a fast swipe never starts the same one twice or cancels it half way. */
+    private val coverJobs = HashSet<String>()
+
+    /**
+     * Queues the covers around the selection, nearest first. Loads run independently of
+     * each other (three at a time inside [Covers]), so moving the shelf only adds work and never throws it away.
+     */
+    private fun loadCoversAround() {
         val shelf = state.shelf
-        if (shelf.isEmpty()) return
-        val lo = max(0, state.selected - 4)
-        val hi = min(shelf.lastIndex, state.selected + 4)
-        // current first, then outwards
-        val order = (lo..hi).sortedBy { kotlin.math.abs(it - state.selected) }
+        val n = shelf.size
+        if (n == 0) return
+        val sel = state.selected
+        // the carts on screen and a few either side (a fling queues more as it passes, never cancelling)
+        val order = (0 until n).sortedBy { i -> min((i - sel + n) % n, (sel - i + n) % n) }.take(17)
         for (i in order) {
             val g = shelf[i]
-            if (state.covers.containsKey(g.id)) continue
-            val img = covers.load(g, state.settings.downloadCovers) ?: continue
-            state.covers[g.id] = img
+            if (state.covers.containsKey(g.id) || !coverJobs.add(g.id)) continue
+            lifecycleScope.launch {
+                try {
+                    covers.load(g, state.settings.downloadCovers)?.let { state.covers[g.id] = it }
+                } finally {
+                    coverJobs.remove(g.id)
+                }
+            }
         }
     }
 

@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.18** (`versionCode` 19) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.18` with `slot-android-0.1.18.apk` attached. Everything the user asked for so far is
+Version **0.1.19** (`versionCode` 20) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.19` with `slot-android-0.1.19.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -19,6 +19,8 @@ cover art with fuzzy matching and a Wikipedia fallback; Settings > Emulators (de
 emulator); cart size and drawer options; touch scrolling in menus; backup of choices in the ROM folder; fixed signing key.
 
 ## Recently Completed (newest first, all in git history)
+
+- 0.1.19: fixed wrong cover art while the shelf moves (carts are now placed and chosen from the moving `scroll`, `ringGame(centre + slot)`, not from `target`/`selected` which can disagree mid-fling) and blank carts (cover loads are independent jobs tracked in `coverJobs`, nearest 17 queued, never cancelled by a selection change; 9 carts drawn instead of 7).
 
 - 0.1.18: touch momentum. Shelf: `SlotState.fling` + `flingVel` coast with friction (FLING_FRICTION 2.4/s), selection follows the middle cart while dragging/coasting, then the spring settles. Menus: MenuPanel rows are a LazyColumn (native fling like the app drawer); the D-pad cursor is scrolled into view.
 

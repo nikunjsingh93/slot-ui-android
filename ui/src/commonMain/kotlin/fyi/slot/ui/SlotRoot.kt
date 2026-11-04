@@ -185,14 +185,16 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
         ) {
             drawShelfBackdrop(m)
             val rest = state.target - state.scroll
+            // while moving, carts are placed around the one nearest the middle of the moving shelf
+            val centre = kotlin.math.round(state.scroll).toInt()
             val inSeat = seat > 0f
             // far first, selected last
-            val order = (-3..3).sortedByDescending { abs(it) }
+            val order = (-4..4).sortedByDescending { abs(it) }
             for (slot in order) {
-                val g = shelfGame(state, slot) ?: continue
+                val g = (if (n >= 3) ringGame(state, centre + slot) else shelfGame(state, slot)) ?: continue
                 if (slot == 0 && (inSeat || pickerOpen)) continue
                 val painter = assets.painterFor(g, state.covers[g.id])
-                val pose = shelfPose(m, painter.spec, rest + slot, recede = seat)
+                val pose = shelfPose(m, painter.spec, if (n >= 3) (centre + slot) - state.scroll else rest + slot, recede = seat)
                 val w = painter.w * pose.scale
                 if (pose.cx + w / 2f < 0f || pose.cx - w / 2f > m.w || pose.alpha <= 0f) continue
                 drawCartPose(painter, pose, 24f * m.u)
@@ -397,3 +399,11 @@ private fun ToastHost(state: SlotState, m: Metrics) {
 
 @Composable
 internal fun Float.pxToDp() = with(androidx.compose.ui.platform.LocalDensity.current) { this@pxToDp.toDp() }
+
+/** The game at unbounded ring position [pos] (the shelf's own coordinate). */
+private fun ringGame(state: SlotState, pos: Int): Game? {
+    val shelf = state.shelf
+    val n = shelf.size
+    if (n == 0) return null
+    return shelf[((pos % n) + n) % n]
+}
