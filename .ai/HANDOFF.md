@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.12** (`versionCode` 13) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.12` with `slot-android-0.1.12.apk` attached. Everything the user asked for so far is
+Version **0.1.13** (`versionCode` 14) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.13` with `slot-android-0.1.13.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -50,6 +50,8 @@ emulator); cart size and drawer options; touch scrolling in menus; backup of cho
 - `README.md` user documentation (kept in sync with every feature). `AGENTS.md`, `CLAUDE.md`, `.ai/*` added now.
 
 ## Work in Progress
+
+- Save export/import, per-game download/upload (0.1.13): `SaveTransfer.kt`, Settings > Saves. Zip layout `saves/<system>/<game>.srm` and `states/<system>/<game>/slotN.*`, matched by system + game name because ids differ per device. Verified on the tablet: per-game export produced the expected zip and per-game import wrote the save plus a .bak. Export-all and import-all (name matching across devices) were not run.
 
 None.
 

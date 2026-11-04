@@ -55,6 +55,59 @@ class MainActivity : ComponentActivity(), SlotHost {
         if (uri != null) addRoot(uri)
     }
 
+    /** The game a save export/import is for (null = all games), set before the file picker opens. */
+    private var saveGame: Game? = null
+
+    private val exportSaves = registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri != null) lifecycleScope.launch {
+            val g = saveGame
+            val r = runCatching {
+                withContext(Dispatchers.IO) {
+                    contentResolver.openOutputStream(uri, "wt")!!.use {
+                        if (g != null) SaveTransfer.exportGame(this@MainActivity, g, it) else SaveTransfer.exportAll(this@MainActivity, state.games, it)
+                    }
+                }
+            }
+            r.onSuccess { state.toast(if (it.files == 0) "No saves to export yet" else "Exported ${it.files} files from ${it.games} game" + if (it.games == 1) "" else "s") }
+                .onFailure { state.toast("Couldn't write the file") }
+        }
+    }
+
+    private val importSaves = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) lifecycleScope.launch {
+            val g = saveGame
+            val r = runCatching {
+                withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uri)!!.use {
+                        if (g != null) SaveTransfer.importGame(this@MainActivity, g, it) else SaveTransfer.importAll(this@MainActivity, state.games, it)
+                    }
+                }
+            }
+            r.onSuccess {
+                rescan(quiet = true)
+                kotlinx.coroutines.delay(1200)
+                state.toast(
+                    when {
+                        it.files == 0 -> "No matching saves found in that file"
+                        it.skipped > 0 -> "Imported ${it.files} files into ${it.games} games, ${it.skipped} not matched"
+                        else -> "Imported ${it.files} files into ${it.games} game" + if (it.games == 1) "" else "s"
+                    },
+                )
+            }.onFailure { state.toast("That isn't a slot saves file") }
+        }
+    }
+
+    override fun onExportSaves(game: Game?) {
+        saveGame = game
+        val stamp = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(Date())
+        exportSaves.launch(if (game != null) "${game.title} save.zip" else "slot-saves-$stamp.zip")
+    }
+
+    override fun onImportSaves(game: Game?) {
+        saveGame = game
+        importSaves.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+    }
+
     private val playGame = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         onGameClosed(res.resultCode)
     }

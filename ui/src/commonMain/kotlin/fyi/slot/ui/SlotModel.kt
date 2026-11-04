@@ -83,6 +83,9 @@ interface SlotHost {
     fun onSettingsChanged(settings: Settings) {}
     fun onPickLibrary() {}
     fun onRescan() {}
+    /** Save transfer (Settings > Saves): zip all saves out, zip saves in, or the same for one game. */
+    fun onExportSaves(game: Game?) {}
+    fun onImportSaves(game: Game?) {}
     /** Every launchable app on the device, for Settings > Apps & games. */
     fun listApps(): List<AppEntry> = emptyList()
     fun onAppKind(pkg: String, kind: AppKind) {}
