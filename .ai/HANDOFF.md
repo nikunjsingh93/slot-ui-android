@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.21** (`versionCode` 22) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.21` with `slot-android-0.1.21.apk` attached. Everything the user asked for so far is
+Version **0.1.22** (`versionCode` 23) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.22` with `slot-android-0.1.22.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -19,6 +19,8 @@ cover art with fuzzy matching and a Wikipedia fallback; Settings > Emulators (de
 emulator); cart size and drawer options; touch scrolling in menus; backup of choices in the ROM folder; fixed signing key.
 
 ## Recently Completed (newest first, all in git history)
+
+- 0.1.22: list view redesigned: `GameListPanel` overlays the left part between top bar and footer; `Metrics(split=true)` moves cx to 0.72w (carts + slot on the right), fixed highlight with rows glued to `state.scroll` (scrollToItem per frame, equal row heights, letter in a side column), list drag drives the shelf. README screenshots in docs/screenshots (fictional games, `readmeShots` scene). The desktop renderer crashes (native skia access violation) on the list view, so there is no list screenshot.
 
 - 0.1.21: letters only while swiping (+2.5 s, fade), no background pill; list view: small bold centred system name, selected game pinned to the middle (scrollToItem with half-height content padding, letter-heading offset), list slides under it.
 

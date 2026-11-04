@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +32,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -66,77 +73,77 @@ fun LetterBar(state: SlotState, onTouch: () -> Unit) {
 }
 
 /**
- * "List + cart" shelf view: the games as a list on one side (left on wide screens, top on tall ones) and slot's own
- * shelf with the selected cart and the slot on the other. Tapping a game selects it; tapping the selected one plays it.
+ * "List + cart" shelf view: the games as a list on the left, between the system bar and the bottom bar, beside the
+ * carts and the slot (which move to the right). The white highlight stays fixed in the middle and the names roll
+ * through it like a slot machine, glued to the shelf's own position so the list and the carts move as one.
  */
 @Composable
-fun ListShelf(state: SlotState, m: Metrics, shelfView: @Composable (Metrics) -> Unit) {
-    val wide = !m.portrait
-    val body: @Composable (Modifier, Modifier) -> Unit = { listMod, cartMod ->
-        GameList(state, listMod)
-        BoxWithConstraints(cartMod.clipToBounds()) {
-            val w = constraints.maxWidth.toFloat()
-            val h = constraints.maxHeight.toFloat()
-            val m2 = remember(w, h, state.settings.cartSize) { Metrics(w, h, state.settings.cartSize.factor) }
-            CompositionLocalProvider(LocalU provides m2.u) { shelfView(m2) }
-        }
-    }
-    Box(Modifier.fillMaxSize().background(SlotColors.Recess)) {
-        if (wide) Row(Modifier.fillMaxSize()) { body(Modifier.fillMaxHeight().weight(.42f), Modifier.fillMaxHeight().weight(.58f)) }
-        else Column(Modifier.fillMaxSize()) { body(Modifier.fillMaxWidth().weight(.42f), Modifier.fillMaxWidth().weight(.58f)) }
-    }
-}
-
-@Composable
-private fun GameList(state: SlotState, modifier: Modifier) {
+fun GameListPanel(state: SlotState, m: Metrics) {
     val shelf = state.shelf
+    val n = shelf.size
+    if (n == 0) return
     val list = rememberLazyListState()
     val sel = state.selected
-    // The selected game stays in the middle of the list and the list slides under it, whether the move came from the
-    // D-pad, a swipe on the carts or a tap. While the carts are being swiped the list follows them without animating.
-    var listH by remember { mutableIntStateOf(0) }
-    val rowPx = with(LocalDensity.current) { 38f.udp().toPx() }
-    val headPx = with(LocalDensity.current) { 26f.udp().toPx() }
-    // half a list of empty space above the first game and below the last, so they too can sit in the middle
-    val halfPad = (listH / 2f - rowPx / 2f).roundToInt().coerceAtLeast(0)
-    LaunchedEffect(sel, shelf.size, listH) {
-        if (listH == 0 || shelf.isEmpty()) return@LaunchedEffect
-        // a game that opens a new letter carries its letter heading above it; centre the game row, not the heading
-        val heading = if (sel == 0 || state.letterOf(shelf[sel - 1]) != state.letterOf(shelf[sel])) headPx else 0f
-        val offset = ((listH - rowPx) / 2f - heading).roundToInt() - halfPad
-        if (state.dragging || state.flingVel != 0f) list.scrollToItem(sel, -offset) else list.animateScrollToItem(sel, -offset)
+    val density = LocalDensity.current
+    val rowPx = with(density) { ROW.udp().toPx() }
+    val top = m.topBar + 6f * m.u
+    val bottom = m.bandTop - 6f * m.u
+    val listH = (bottom - top).coerceAtLeast(rowPx)
+    // half a panel of empty space above the first game and below the last, so every game can reach the middle
+    val halfPad = ((listH - rowPx) / 2f).roundToInt().coerceAtLeast(0)
+    LaunchedEffect(n, halfPad) {
+        snapshotFlow { state.scroll }.collect { s ->
+            val base = kotlin.math.floor(s)
+            val i = ((base.toInt() % n) + n) % n
+            list.scrollToItem(i, ((s - base) * rowPx).roundToInt())
+        }
     }
-    Column(modifier.padding(start = 14f.udp(), end = 6f.udp(), top = 10f.udp(), bottom = 10f.udp())) {
-        SlotText(
-            (state.system?.title ?: "").uppercase(), 11.5f, bold = true, align = TextAlign.Center,
-            color = SlotColors.Ink.copy(alpha = .5f), modifier = Modifier.fillMaxWidth().padding(bottom = 8f.udp()),
+    val panelW = m.w * 0.44f
+    Box(
+        Modifier.offset { IntOffset(0, top.roundToInt()) }.width(with(density) { panelW.toDp() }).height(with(density) { listH.toDp() })
+            .padding(start = 14f.udp(), end = 6f.udp()),
+    ) {
+        // the fixed highlight, drawn behind the rows
+        Box(
+            Modifier.align(Alignment.Center).fillMaxWidth().height(ROW.udp()).clip(RoundedCornerShape(9f.udp())).background(SlotColors.Ink),
         )
         LazyColumn(
-            Modifier.fillMaxSize().onSizeChanged { listH = it.height }, state = list,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = with(LocalDensity.current) { halfPad.toDp() }),
+            Modifier.fillMaxSize()
+                // dragging the list moves the shelf itself (same momentum as the carts); the list just follows it
+                .draggable(
+                    orientation = Orientation.Vertical,
+                    state = rememberDraggableState { dy -> state.dragging = true; state.scroll -= dy / rowPx },
+                    onDragStarted = { state.flingVel = 0f },
+                    onDragStopped = { v -> state.fling(-v / rowPx) },
+                ),
+            state = list,
+            userScrollEnabled = false,
+            contentPadding = PaddingValues(vertical = with(density) { halfPad.toDp() }),
         ) {
             itemsIndexed(shelf, key = { _, g -> g.id }) { i, g ->
                 val on = i == sel
                 val newLetter = i == 0 || state.letterOf(shelf[i - 1]) != state.letterOf(g)
-                if (newLetter) {
-                    SlotText(state.letterOf(g).toString(), 12f, bold = true, color = SlotColors.Ink.copy(alpha = .45f), modifier = Modifier.padding(start = 10f.udp(), top = 6f.udp(), bottom = 2f.udp()))
-                }
+                val ink = if (on) SlotColors.CapInk else SlotColors.Ink.copy(alpha = .85f)
                 Row(
-                    Modifier.fillMaxWidth().height(38f.udp()).clip(RoundedCornerShape(9f.udp()))
-                        .background(if (on) SlotColors.Ink else Color.Transparent)
+                    Modifier.fillMaxWidth().height(ROW.udp())
                         .clickable {
                             if (on) { if (state.screen == Screen.Browse) state.insert(g, resume = true) } else state.selectIndex(i)
                         }
-                        .padding(horizontal = 10f.udp()),
+                        .padding(end = 10f.udp()),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SlotText(g.title, 15f, bold = on, color = if (on) SlotColors.CapInk else SlotColors.Ink.copy(alpha = .9f), modifier = Modifier.weight(1f))
+                    Box(Modifier.width(26f.udp()), contentAlignment = Alignment.Center) {
+                        if (newLetter) SlotText(state.letterOf(g).toString(), 12f, bold = true, color = ink.copy(alpha = .5f))
+                    }
+                    SlotText(g.title, 15f, bold = on, color = ink, modifier = Modifier.weight(1f))
                     if (g.hasSave) {
                         Spacer(Modifier.width(6f.udp()))
-                        SlotText("saved", 11f, color = (if (on) SlotColors.CapInk else SlotColors.Ink).copy(alpha = .5f))
+                        SlotText("saved", 11f, color = ink.copy(alpha = .55f))
                     }
                 }
             }
         }
     }
 }
+
+private const val ROW = 38f

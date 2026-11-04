@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
@@ -71,12 +72,13 @@ fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boole
     BoxWithConstraints(modifier.fillMaxSize()) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
-        val m = remember(w, h, state.settings.cartSize) { Metrics(w, h, state.settings.cartSize.factor) }
+        val split = state.settings.shelfList && state.shelf.isNotEmpty()
+        val m = remember(w, h, state.settings.cartSize, split) { Metrics(w, h, state.settings.cartSize.factor, split) }
         CompositionLocalProvider(LocalU provides m.u) {
             val assets = rememberCartAssets()
             if (!gameProcess) {
-                if (state.settings.shelfList && state.shelf.isNotEmpty()) ListShelf(state, m) { m2 -> Browser(state, m2, assets) }
-                else Browser(state, m, assets)
+                Browser(state, m, assets)
+                if (m.split) GameListPanel(state, m)
             }
             if (gameProcess || state.overlay != Overlay.None) Menus(state, m, gameProcess)
             ToastHost(state, m)
@@ -197,6 +199,10 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
             // the list view shows only the selected cart beside the list
             val reach = if (vertical) 2 else 4
             val order = (-reach..reach).sortedByDescending { abs(it) }
+            // list view: the stacked carts stay between the system bar and the title, never over them
+            val clipTop = if (vertical) m.topBar else 0f
+            val clipBottom = if (vertical) m.shelfBottom else m.h
+            clipRect(0f, clipTop, m.w, clipBottom) {
             for (slot in order) {
                 val g = (if (n >= 3) ringGame(state, centre + slot) else shelfGame(state, slot)) ?: continue
                 if (slot == 0 && (inSeat || pickerOpen)) continue
@@ -206,6 +212,7 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
                 val w = painter.w * pose.scale
                 if (pose.cx + w / 2f < 0f || pose.cx - w / 2f > m.w || pose.alpha <= 0f) continue
                 drawCartPose(painter, pose, 24f * m.u)
+            }
             }
             if (n == 0) drawEmpty(m)
             if (inSeat) drawRect(Color.Black.copy(alpha = seat))
@@ -324,7 +331,7 @@ private fun BasinTitle(state: SlotState, m: Metrics) {
     val g = state.current ?: return
     val textH = m.titleH
     Box(
-        Modifier.fillMaxWidth().height(textH.pxToDp()).offset { IntOffset(0, m.shelfBottom.roundToInt()) },
+        Modifier.fillMaxWidth().height(textH.pxToDp()).offset { IntOffset((m.cx - m.w / 2f).roundToInt(), m.shelfBottom.roundToInt()) },
         contentAlignment = Alignment.Center,
     ) {
         val holding = state.aDown && state.aHold > 180f
@@ -342,7 +349,7 @@ private fun BasinTitle(state: SlotState, m: Metrics) {
                 val title = state.shelf.firstOrNull { it.id == id }?.title ?: g.title
                 SlotText(
                     title, 20f, bold = true, align = TextAlign.Center,
-                    modifier = Modifier.width(((m.w / m.u).coerceAtMost(330f)).udp()),
+                    modifier = Modifier.width(((m.cartsW / m.u).coerceAtMost(330f)).udp()),
                 )
             }
         }

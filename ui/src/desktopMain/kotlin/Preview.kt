@@ -102,6 +102,8 @@ fun main(args: Array<String>) {
     if (which == "folders") folderCheck()
     if (which == "covermatch") coverMatchCheck(out)
     if (which == "consoles") consoleShots(out)
+    if (which == "readme") readmeShots(out)
+    if (which == "list") listShots(out)
 
     if (which == "all" || which == "phone") {
         val state = SlotState().apply { setLibrary(library()); selected = 5; gamepad = false }
@@ -297,4 +299,44 @@ fun coverMatchCheck(out: File) {
         println("$n: ${names.size} names")
         for (s in stems) println("   $s  ->  ${CoverMatch.best(s, names)}")
     }
+}
+
+/** Screenshots for the README: the real screens, with made-up games so no real titles or box art appear. */
+fun readmeShots(out: File) {
+    val made = listOf(
+        GameSystem.GBA to listOf("Aurora Drift", "Brass Lantern", "Cinder Valley", "Dune Courier", "Echo Harbor", "Fable Forge", "Glass Orchard", "Harbor Lights"),
+        GameSystem.SNES to listOf("Iron Meadow", "Jade Comet", "Kite Runner 64", "Lunar Garden", "Moss Kingdom"),
+        GameSystem.PSX to listOf("Neon Overpass", "Orbit Rally", "Paper Tigers", "Quartz Circuit", "Rust Bucket Racing"),
+        GameSystem.N64 to listOf("Sky Ferry", "Tidal Sprint", "Umbra Peaks", "Velvet Raceway", "Wild Pines"),
+        GameSystem.PSP to listOf("Xeno Trails", "Yonder Isle", "Zephyr Street", "Amber Signal"),
+        GameSystem.DC to listOf("Blue Harbor", "Coral Coast Taxi", "Dawn Fighters", "Ember League"),
+    )
+    val lib = made.flatMap { (sys, titles) -> titles.map { sample(sys, it) } }
+    fun shelf(name: String, systemIndex: Int, selected: Int, w: Int = 1280, h: Int = 960, list: Boolean = false, act: (SlotState, Shoot) -> Unit = { _, _ -> }) {
+        val st = SlotState().apply {
+            setLibrary(lib); this.systemIndex = systemIndex; setLibrary(lib); select(selected); gamepad = true
+            if (list) settings = settings.copy(shelfList = true)
+        }
+        val s = Shoot(out, name, w, h) { SlotRoot(st) }
+        s.ms(900); act(st, s); s.snap(); s.close()
+    }
+    shelf("readme_gba", 0, 3)
+    shelf("readme_snes", 1, 2)
+    shelf("readme_psx", 2, 1)
+    shelf("readme_n64", 3, 2)
+    shelf("readme_psp", 4, 1)
+    shelf("readme_dc", 5, 1)
+    shelf("readme_list", 0, 3, list = true)
+    shelf("readme_picker", 2, 1) { st, s -> st.press(Pad.Start); s.ms(1100) }
+    shelf("readme_settings", 0, 3) { st, s -> st.openSettings(); s.ms(500) }
+    shelf("readme_portrait", 0, 3, w = 720, h = 1280) { st, _ -> st.gamepad = false }
+}
+
+fun listShots(out: File) {
+    val titles = listOf("Aurora Drift", "Brass Lantern", "Cinder Valley", "Dune Courier", "Echo Harbor", "Fable Forge", "Glass Orchard", "Harbor Lights", "Iron Meadow", "Jade Comet", "Kite Runner", "Lunar Garden")
+    val lib = titles.map { sample(GameSystem.GBA, it) } + listOf("Neon Overpass", "Orbit Rally").map { sample(GameSystem.PSX, it) }
+    val st = SlotState().apply { setLibrary(lib); select(4); gamepad = true; settings = settings.copy(shelfList = true) }
+    val s = Shoot(out, "readme_list", 1280, 960) { SlotRoot(st) }
+    s.ms(900); s.snap()
+    st.press(Pad.Down); s.ms(90); s.snap("mid"); s.close()
 }

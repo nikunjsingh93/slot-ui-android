@@ -39,10 +39,13 @@ private const val CATCH_OUT = 0.62f
 private const val CREEP = 0.03f
 
 /** Screen geometry. [u] is pixels per slot design unit; slot's native canvas is 640x480. */
-class Metrics(val w: Float, val h: Float, val cartFactor: Float = 1f) {
+/** [split]: list view, where the games list takes the left side and the carts and the slot move to the right. */
+class Metrics(val w: Float, val h: Float, val cartFactor: Float = 1f, val split: Boolean = false) {
     val portrait = w < h * 1.05f
     val u: Float = if (portrait) w / 400f else h / 480f
-    val cx = w / 2f
+    val cx = if (split) w * 0.72f else w / 2f
+    /** Width the carts have to themselves. */
+    val cartsW = if (split) w * 0.5f else w
 
     val bandH = 58f * u
     val bandTop = h - bandH
@@ -71,7 +74,7 @@ class Metrics(val w: Float, val h: Float, val cartFactor: Float = 1f) {
 
     /** Slot draws GBA-sized carts 360 units wide and the taller ones a little smaller; Settings > Cart size scales that. */
     fun cartScale(spec: CartSpec): Float =
-        (min(1.5f * u, 340f * u / spec.h) * cartFactor).coerceAtMost(min((w * .92f) / spec.w, availH / spec.h))
+        (min(1.5f * u, 340f * u / spec.h) * cartFactor).coerceAtMost(min((cartsW * .92f) / spec.w, availH / spec.h))
 
     /** The common baseline (cart foot): carts are centred in the strip above the title. */
     fun foot(spec: CartSpec): Float {

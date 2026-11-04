@@ -9,12 +9,30 @@ the contacts, neighbours sliding aside, the screen dimming into the game.
 
 | | |
 |---|---|
-| Systems | GBA, GBC, GB, NES, SNES, Mega Drive/Genesis, Master System, Game Gear and PC Engine run inside slot. PlayStation, PS2, PSP, N64, GameCube and Dreamcast open your installed emulator. Android apps and games can be added too. |
-| Cores | mGBA, gpSP, Gambatte, FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast (libretro, via [LibretroDroid](https://github.com/Swordfish90/LibretroDroid)) |
+| Systems | GBA, GBC, GB, NES, SNES, Mega Drive/Genesis, Master System, Game Gear, PC Engine, PlayStation, N64 and PSP run inside slot (Dreamcast experimental). PS2, GameCube, Dreamcast, Xbox, PS3 and Xbox 360 open your installed emulator, and RetroArch can be used for any built-in system. Android apps and games can be added too. |
+| Cores | mGBA, gpSP, Gambatte, FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast, PCSX ReARMed, Mupen64Plus-Next, PPSSPP, Flycast (libretro, via [LibretroDroid](https://github.com/Swordfish90/LibretroDroid)) |
 | Input | Gamepad first (handhelds), touch controls and swipe when no controller is connected |
 | Target | Android 8+, arm64 |
 
-Tested on an Anbernic RG476H (Android 13, 1280x960).
+Tested on an Anbernic RG476H (Android 13, 1280x960), an RG Rotate (720x720), an Android tablet and a Samsung S25 Ultra.
+
+## Screenshots
+
+Captured from slot's own renderer at 1280 × 960 (the RG476H's resolution), using made-up game names so no real titles
+or box art appear. With your own games the labels show title screens and box art downloaded for each game.
+
+| Game Boy Advance | Super Nintendo | PlayStation |
+|:---:|:---:|:---:|
+| ![Game Boy Advance shelf](docs/screenshots/gba.png) | ![Super Nintendo shelf](docs/screenshots/snes.png) | ![PlayStation shelf with round discs](docs/screenshots/psx.png) |
+
+| Nintendo 64 | PSP | Dreamcast |
+|:---:|:---:|:---:|
+| ![Nintendo 64 shelf](docs/screenshots/n64.png) | ![PSP shelf with UMD discs](docs/screenshots/psp.png) | ![Dreamcast shelf](docs/screenshots/dc.png) |
+
+| Choose an emulator (START) | Settings | Portrait (touch) |
+|:---:|:---:|:---:|
+| ![The board flipped over to choose an emulator](docs/screenshots/picker.png) | ![Settings menu](docs/screenshots/settings.png) | <img src="docs/screenshots/portrait.png" alt="Portrait layout" width="180"> |
+
 
 ## Using it
 
@@ -51,7 +69,7 @@ PlayStation, PS2, N64, GameCube, PSP and Dreamcast run in their own emulators, w
 - **In-game saves (battery saves)** are written for you: every few seconds while you play and again when you eject.
   You never have to do anything for the game's own "Save" to stick.
 - **Jump by letter:** while you swipe the shelf a row of letters appears under the system bar and fades out about 2.5 seconds after you stop. Tap N to jump to the first game starting with N.
-- **Shelf view:** Settings > Interface > Shelf view: **Carts** (slot) or **List + cart**, a scrolling list of games beside the carts stacked top to bottom. The selected game stays in the middle of the list and the list slides under it. Tap a game to select it, tap it again to play; Up / Down move one game.
+- **Shelf view:** Settings > Interface > Shelf view: **Carts** (slot) or **List + cart**, a scrolling list of games on the left, between the system bar and the bottom bar, with the carts stacked top to bottom and the slot on the right. The white highlight stays fixed in the middle and the names roll through it with the carts, like a slot machine. Tap a game to select it, tap it again to play; Up / Down move one game.
 - **Edit button layout:** Settings > Controls > Edit button layout (also in the pause menu under Controls). Pick a system and its on-screen buttons appear over the game: drag the d-pad or the A/B buttons to move them, pinch over a group to resize it, **Reset** puts the defaults back and **Done** keeps the layout. Each system keeps its own layout.
 - **Moving saves to another device:** Settings > Saves. **Export all saves** writes one zip of every emulated game's save (the game's own save and the save states) to a place you choose, and **Import saves** reads such a zip back on another device. Saves go to the game with the same system and name, so the same ROMs must be in the library on both devices. For one game, select it on the shelf, then **Download save** (writes a zip) or **Upload save** (reads a zip into the selected game, even if its file is named differently). An existing save is kept as `.srm.bak` before it is replaced. Save states only load in the same version of the same emulator core.
 - **Portrait screen position:** with on-screen controls in portrait the game picture sits a little below the top edge. Change it in the pause menu or Settings > Screen > Screen position (portrait): Top, Down 1 to Down 5 (default Down 3).
