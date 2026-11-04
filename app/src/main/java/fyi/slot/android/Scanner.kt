@@ -99,7 +99,8 @@ class Scanner(private val ctx: Context) {
 
     private fun toGame(f: Found): Game? {
         val ext = f.name.substringAfterLast('.', "").lowercase()
-        val stem = f.name.substringBeforeLast('.')
+        // "Game.xiso.iso" is named "Game"
+        val stem = f.name.substringBeforeLast('.').let { if (it.endsWith(".xiso", ignoreCase = true)) it.dropLast(5) else it }
         f.system?.let { s ->
             // run by an external emulator: nothing to read from the file, and zips are passed along untouched
             return Game(id = s.id + "_" + sha1(f.docUri.toString()).take(12), stem = stem, system = s, uri = f.docUri.toString(), size = f.size)
@@ -179,8 +180,8 @@ class Scanner(private val ctx: Context) {
         private val SKIP_DIRS = setOf(
             "labels", "media", "bios", "saves", "states", "images", "boxart", "snaps", "thumbnails", "manuals",
             // systems slot does not emulate: don't waste time opening their (often huge) zip collections
-            "ps3", "psv", "vita", "wii", "wiiu", "3ds", "nds", "ds",
-            "saturn", "xbox", "windows", "1windows", "pc", "dos", "scummvm", "switch", "gtav", "arcade", "mame", "fbneo",
+            "psv", "vita", "wii", "wiiu", "3ds", "nds", "ds",
+            "saturn", "windows", "1windows", "pc", "dos", "scummvm", "switch", "gtav", "arcade", "mame", "fbneo",
         )
 
         fun sha1(s: String): String =

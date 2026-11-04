@@ -23,6 +23,7 @@ emulator); cart size and drawer options; touch scrolling in menus; backup of cho
 - 0.1.25: menu choices get tappable < > arrows (`stepMenuRow`), Settings > Interface > Interface scale (`UiScale`, multiplies `Metrics.u`). Tested on the tablet.
 - 0.1.26: Menu text size removed (Interface scale covers it). `Metrics.u` is now `min(w,h)/480` in both orientations (same size when rotated) and capped at `density*1.15` px on screens 600dp+ across (tablets drawn at a handheld's physical size); `maxU` comes from SlotRoot, and `autoScaleBigScreens` is false in the desktop previews. Checked on the tablet in portrait and landscape.
 - 0.1.27: Shelf view "Grid" (`Settings.shelfGrid`, `ShelfGrid.kt`, LazyVerticalGrid of cart painters drawn over the carts while `screen == Browse`; hidden on insert so the drop animation plays). `SlotState.gridView`, `gridCols` (Up/Down step a row, clamped in `ringStep`), `coverRange` (MainActivity loads covers for the visible tiles plus a screenful either side). Preview scene `grid`. Tested on the RG476H (D-pad, tap) and restored to Carts.
+- 0.1.28: `Scanner.SKIP_DIRS` still listed "xbox" and "ps3" from before those systems were supported, so those folders were never scanned; removed. "Game.xiso.iso" stems drop the ".xiso". Checked on the RG476H (Games/xbox/Forza ... .xiso.iso shows on the Xbox shelf).
 
 - README rewritten to match 0.1.24 (systems table with built-in/external defaults, browsing, playing, saves, settings overview). Keep it in sync when adding features.
 
