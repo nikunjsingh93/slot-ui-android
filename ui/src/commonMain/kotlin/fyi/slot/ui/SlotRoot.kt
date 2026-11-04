@@ -86,6 +86,8 @@ fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boole
             if (!gameProcess) {
                 Browser(state, m, assets)
                 if (m.split) GameListPanel(state, m)
+                // grid view covers the carts while browsing; starting a game shows them again for the drop into the slot
+                if (state.gridView && state.screen == Screen.Browse) ShelfGrid(state, m, assets)
             }
             if (gameProcess || state.overlay != Overlay.None) Menus(state, m, gameProcess)
             ToastHost(state, m)

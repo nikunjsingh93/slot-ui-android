@@ -199,8 +199,8 @@ private fun SlotState.interfacePage(): MenuPage = MenuPage(
         MenuChoice("List text size", ListSize.entries.map { it.label }, { settings.listSize.ordinal }) { i ->
             update { it.copy(listSize = ListSize.entries[i]) }
         },
-        MenuChoice("Shelf view", listOf("Carts", "List + cart"), { if (settings.shelfList) 1 else 0 }) { i ->
-            update { it.copy(shelfList = i == 1) }
+        MenuChoice("Shelf view", listOf("Carts", "List + cart", "Grid"), { if (settings.shelfList) 1 else if (settings.shelfGrid) 2 else 0 }) { i ->
+            update { it.copy(shelfList = i == 1, shelfGrid = i == 2) }
         },
         MenuChoice("App drawer layout", listOf("Grid", "List"), { if (settings.drawerGrid) 0 else 1 }) { i ->
             update { it.copy(drawerGrid = i == 0) }

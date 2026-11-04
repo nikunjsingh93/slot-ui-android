@@ -105,6 +105,7 @@ fun main(args: Array<String>) {
     if (which == "consoles") consoleShots(out)
     if (which == "readme") readmeShots(out)
     if (which == "list") listShots(out)
+    if (which == "grid") gridShots(out)
 
     if (which == "all" || which == "phone") {
         val state = SlotState().apply { setLibrary(library()); selected = 5; gamepad = false }
@@ -340,4 +341,17 @@ fun listShots(out: File) {
     val s = Shoot(out, "readme_list", 1280, 960) { SlotRoot(st) }
     s.ms(900); s.snap()
     st.press(Pad.Down); s.ms(90); s.snap("mid"); s.close()
+}
+
+fun gridShots(out: File) {
+    val made = listOf(
+        GameSystem.GBA to listOf("Aurora Drift", "Brass Lantern", "Cinder Valley", "Dune Courier", "Echo Harbor", "Fable Forge", "Glass Orchard", "Harbor Lights", "Iron Meadow", "Jade Comet", "Kite Runner", "Lunar Garden", "Moss Kingdom", "Neon Overpass"),
+        GameSystem.PSX to listOf("Orbit Rally", "Paper Tigers", "Quartz Circuit", "Rust Bucket Racing", "Sky Ferry", "Tidal Sprint", "Umbra Peaks", "Velvet Raceway", "Wild Pines"),
+    )
+    val lib = made.flatMap { (sys, titles) -> titles.map { sample(sys, it) } }
+    for ((name, sys, size) in listOf(Triple("readme_grid", 0, 1280 to 960), Triple("grid_psx", 1, 1280 to 960), Triple("grid_portrait", 0, 720 to 1280))) {
+        val st = SlotState().apply { setLibrary(lib); systemIndex = sys; setLibrary(lib); select(2); gamepad = true; settings = settings.copy(shelfGrid = true) }
+        val s = Shoot(out, name, size.first, size.second) { SlotRoot(st) }
+        s.ms(900); s.snap(); s.close()
+    }
 }

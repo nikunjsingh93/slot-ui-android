@@ -33,9 +33,13 @@ or box art appear. With your own games the labels show title screens and box art
 |:---:|:---:|:---:|
 | ![Nintendo 64 shelf](docs/screenshots/n64.png) | ![PSP shelf with UMD discs](docs/screenshots/psp.png) | ![Dreamcast shelf](docs/screenshots/dc.png) |
 
-| Choose an emulator (START) | Settings | Portrait (touch) |
+| Choose an emulator (START) | Settings | Grid view |
 |:---:|:---:|:---:|
-| ![The board flipped over to choose an emulator](docs/screenshots/picker.png) | ![Settings menu](docs/screenshots/settings.png) | <img src="docs/screenshots/portrait.png" alt="Portrait layout" width="180"> |
+| ![The board flipped over to choose an emulator](docs/screenshots/picker.png) | ![Settings menu](docs/screenshots/settings.png) | ![Grid view of PlayStation discs](docs/screenshots/grid.png) |
+
+| Portrait (touch) |
+|:---:|
+| <img src="docs/screenshots/portrait.png" alt="Portrait layout" width="180"> |
 
 ## Getting started
 
@@ -64,7 +68,7 @@ copies them over. No BIOS, firmware or games are included with slot.
 | Left / Right | previous / next game (hold to speed up) |
 | L2 / R2 | previous / next game |
 | L1 / R1 | previous / next system |
-| Up / Down | jump to the previous / next letter (in the list view: one game) |
+| Up / Down | jump to the previous / next letter (list view: one game; grid view: one row) |
 | A | play: a tap resumes where you stopped, holding it starts the game fresh |
 | START | flip the cart over to choose the emulator for this game |
 | Y | app drawer |
@@ -82,6 +86,9 @@ to jump to the first game with that letter. It fades out a couple of seconds aft
   to bottom with the slot on the right. The white highlight stays fixed in the middle and the names roll through it with
   the carts, like a slot machine; the list wraps round from the last game to the first, and small letter headings mark
   where each letter starts. **List text size** (Small, Medium, Large, Extra large) is in the same menu.
+- **Grid**: every game of the system at once, as a grid of its carts and discs with their art, so you can see many
+  games together. Up/Down move a row, Left/Right a game; tap a game to select it and tap it again to play (long-press
+  for the emulator picker). **Cart size** sets how big the tiles are. Starting a game drops its cart into the slot as usual.
 
 The interface keeps the same size when the device is turned, and on 8-inch and larger tablets it is automatically drawn
 at a handheld's size instead of being blown up; **Settings > Interface > Interface scale** (60-135%) adjusts it further.

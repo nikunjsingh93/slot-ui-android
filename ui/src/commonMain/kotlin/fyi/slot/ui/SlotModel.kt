@@ -49,9 +49,10 @@ data class Settings(
     val cartSize: CartSize = CartSize.Default,
     /** Shelf view: false = carts only (slot), true = a list of games beside the cart. */
     val shelfList: Boolean = false,
+    /** Shelf view "Grid": every game of the system as a grid of carts and discs (ignored while [shelfList] is on). */
+    val shelfGrid: Boolean = false,
     /** List view text size. */
     val listSize: ListSize = ListSize.Medium,
-    /** Settings and pause menu text size. */
     /** Size of the whole interface. */
     val uiScale: UiScale = UiScale.Default,
     val drawerGrid: Boolean = true,

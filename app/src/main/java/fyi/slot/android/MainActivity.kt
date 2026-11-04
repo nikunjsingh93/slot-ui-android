@@ -150,7 +150,7 @@ class MainActivity : ComponentActivity(), SlotHost {
 
         // Cart art for whatever is on screen.
         lifecycleScope.launch {
-            snapshotFlow { Triple(state.systemIndex, state.selected, state.shelf.size) }.collectLatest {
+            snapshotFlow { listOf(state.systemIndex, state.selected, state.shelf.size, state.coverRange) }.collectLatest {
                 loadCoversAround()
             }
         }
@@ -294,7 +294,13 @@ class MainActivity : ComponentActivity(), SlotHost {
         if (n == 0) return
         val sel = state.selected
         // the carts on screen and a few either side (a fling queues more as it passes, never cancelling)
-        val order = (0 until n).sortedBy { i -> min((i - sel + n) % n, (sel - i + n) % n) }.take(17)
+        val grid = state.coverRange
+        val order = if (grid != null) {
+            // grid view: what is on screen first, then a screenful either side of it
+            val span = grid.last - grid.first + 1
+            val near = (grid.first - span).coerceAtLeast(0)..(grid.last + span).coerceAtMost(n - 1)
+            near.sortedBy { i -> if (i in grid) 0 else 1 + min(kotlin.math.abs(i - grid.first), kotlin.math.abs(i - grid.last)) }
+        } else (0 until n).sortedBy { i -> min((i - sel + n) % n, (sel - i + n) % n) }.take(17)
         for (i in order) {
             val g = shelf[i]
             if (state.covers.containsKey(g.id) || !coverJobs.add(g.id)) continue

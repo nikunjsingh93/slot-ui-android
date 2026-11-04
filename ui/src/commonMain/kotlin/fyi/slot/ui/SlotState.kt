@@ -43,6 +43,13 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     /** The system whose on-screen buttons are being edited (Overlay.EditLayout). */
     var editSystem by mutableStateOf<GameSystem?>(null)
 
+    /** Shelf view "Grid" (Settings > Interface > Shelf view). */
+    val gridView: Boolean get() = settings.shelfGrid && !settings.shelfList
+    /** Columns of the shelf grid as laid out on screen, so Up/Down move a row. */
+    var gridCols by mutableIntStateOf(4)
+    /** Shelf indices the grid has on screen (covers for these load first), or null when the grid is not showing. */
+    var coverRange by mutableStateOf<IntRange?>(null)
+
     /** Monotonic counter bumped on every move; lets the shelf play a tick without diffing. */
     var moveTick by mutableIntStateOf(0)
 
@@ -110,9 +117,15 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     private fun ringIndex(t: Int, n: Int) = ((t % n) + n) % n
 
     /** Move the selection by [by] places around the ring (clamped when there are fewer than 3 carts). */
-    private fun ringStep(by: Int) {
+    private fun ringStep(step: Int) {
         val n = shelf.size
         if (n < 2) return
+        var by = step
+        // grid view: Up/Down move a whole row and stop at the first and last games instead of wrapping round
+        if (gridView && kotlin.math.abs(by) > 1) {
+            by = (selected + by).coerceIn(0, n - 1) - selected
+            if (by == 0) return
+        }
         if (n < 3 && selected + by !in 0 until n) return
         target += by
         selected = ringIndex(target, n)
@@ -352,8 +365,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                     ringStep(d)
                     heldDir = d; heldDue = clockMs + HOLD_DELAY_MS; heldFired = 0
                 }
-                Pad.Up -> if (settings.shelfList) { if (!repeat) startHold(-1) } else if (!repeat) skipLetter(-1)
-                Pad.Down -> if (settings.shelfList) { if (!repeat) startHold(+1) } else if (!repeat) skipLetter(+1)
+                Pad.Up -> if (gridView) { if (!repeat) startHold(-gridCols) } else if (settings.shelfList) { if (!repeat) startHold(-1) } else if (!repeat) skipLetter(-1)
+                Pad.Down -> if (gridView) { if (!repeat) startHold(gridCols) } else if (settings.shelfList) { if (!repeat) startHold(+1) } else if (!repeat) skipLetter(+1)
                 Pad.L1 -> if (!repeat) switchSystem(-1)
                 Pad.R1 -> if (!repeat) switchSystem(+1)
                 Pad.Start -> openCorePicker()
@@ -377,7 +390,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     }
 
     fun release(pad: Pad, now: Long = 0L) {
-        if (((pad == Pad.Left || pad == Pad.L2 || (pad == Pad.Up && settings.shelfList)) && heldDir < 0) || ((pad == Pad.Right || pad == Pad.R2 || (pad == Pad.Down && settings.shelfList)) && heldDir > 0)) heldDir = 0
+        if (((pad == Pad.Left || pad == Pad.L2 || (pad == Pad.Up && (settings.shelfList || gridView))) && heldDir < 0) || ((pad == Pad.Right || pad == Pad.R2 || (pad == Pad.Down && (settings.shelfList || gridView))) && heldDir > 0)) heldDir = 0
         if (pad == Pad.A && aDown) {
             aDown = false
             aHold = 0f
