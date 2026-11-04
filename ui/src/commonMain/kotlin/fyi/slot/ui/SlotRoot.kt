@@ -226,13 +226,16 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
         val hudAlpha = if (pickerOpen) 0f else ui
         Box(Modifier.fillMaxSize().alpha(hudAlpha)) {
             TopBar(state, m)
-            // letter tabs: always on touch screens, and for a few seconds after any swipe on a handheld
+            // letter tabs: only while the shelf is being swiped, fading out a moment after it stops
             var letterPing by remember { androidx.compose.runtime.mutableIntStateOf(0) }
             var lettersShown by remember { androidx.compose.runtime.mutableStateOf(false) }
-            LaunchedEffect(state.dragging || state.flingVel != 0f) { if (state.dragging || state.flingVel != 0f) letterPing++ }
-            LaunchedEffect(letterPing) { if (letterPing > 0) { lettersShown = true; delay(3500); lettersShown = false } }
-            if (n > 1 && !state.settings.shelfList && (!state.gamepad || lettersShown)) {
-                Box(Modifier.fillMaxWidth().offset { IntOffset(0, m.topBar.roundToInt()) }.padding(horizontal = 16f.udp()), contentAlignment = Alignment.TopCenter) {
+            val moving = state.dragging || state.flingVel != 0f
+            LaunchedEffect(moving, letterPing) {
+                if (moving) lettersShown = true else if (lettersShown) { delay(2500); lettersShown = false }
+            }
+            val lettersAlpha by androidx.compose.animation.core.animateFloatAsState(if (lettersShown) 1f else 0f, tween(if (lettersShown) 120 else 400), label = "letters")
+            if (n > 1 && !state.settings.shelfList && lettersAlpha > 0.01f) {
+                Box(Modifier.fillMaxWidth().offset { IntOffset(0, m.topBar.roundToInt()) }.padding(horizontal = 16f.udp()).alpha(lettersAlpha), contentAlignment = Alignment.TopCenter) {
                     LetterBar(state) { letterPing++ }
                 }
             }

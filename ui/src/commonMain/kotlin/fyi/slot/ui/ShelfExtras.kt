@@ -30,10 +30,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import kotlin.math.roundToInt
 
 /**
  * The first letters of the games on this shelf as a row of small tabs; tapping one jumps to the first game with that
- * letter (N for every Need for Speed). Shown on touch screens, and for a few seconds after a swipe on handhelds.
+ * letter (N for every Need for Speed). Shown while the shelf is swiped and for a moment after.
  */
 @Composable
 fun LetterBar(state: SlotState, onTouch: () -> Unit) {
@@ -42,8 +49,7 @@ fun LetterBar(state: SlotState, onTouch: () -> Unit) {
     if (letters.size < 2) return
     val here = state.current?.let { state.letterOf(it) }
     Row(
-        Modifier.horizontalScroll(rememberScrollState()).clip(RoundedCornerShape(14f.udp()))
-            .background(Color.Black.copy(alpha = .45f)).padding(horizontal = 6f.udp(), vertical = 3f.udp()),
+        Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 6f.udp(), vertical = 3f.udp()),
         horizontalArrangement = Arrangement.spacedBy(2f.udp()),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -86,15 +92,29 @@ private fun GameList(state: SlotState, modifier: Modifier) {
     val shelf = state.shelf
     val list = rememberLazyListState()
     val sel = state.selected
-    // keep the selection in view when it moves by D-pad or by a swipe on the cart
-    LaunchedEffect(sel, shelf.size) {
-        val info = list.layoutInfo.visibleItemsInfo
-        val visible = info.filter { it.offset >= 0 && it.offset + it.size <= list.layoutInfo.viewportEndOffset }.map { it.index }
-        if (sel !in visible) list.scrollToItem((sel - 3).coerceAtLeast(0))
+    // The selected game stays in the middle of the list and the list slides under it, whether the move came from the
+    // D-pad, a swipe on the carts or a tap. While the carts are being swiped the list follows them without animating.
+    var listH by remember { mutableIntStateOf(0) }
+    val rowPx = with(LocalDensity.current) { 38f.udp().toPx() }
+    val headPx = with(LocalDensity.current) { 26f.udp().toPx() }
+    // half a list of empty space above the first game and below the last, so they too can sit in the middle
+    val halfPad = (listH / 2f - rowPx / 2f).roundToInt().coerceAtLeast(0)
+    LaunchedEffect(sel, shelf.size, listH) {
+        if (listH == 0 || shelf.isEmpty()) return@LaunchedEffect
+        // a game that opens a new letter carries its letter heading above it; centre the game row, not the heading
+        val heading = if (sel == 0 || state.letterOf(shelf[sel - 1]) != state.letterOf(shelf[sel])) headPx else 0f
+        val offset = ((listH - rowPx) / 2f - heading).roundToInt() - halfPad
+        if (state.dragging || state.flingVel != 0f) list.scrollToItem(sel, -offset) else list.animateScrollToItem(sel, -offset)
     }
     Column(modifier.padding(start = 14f.udp(), end = 6f.udp(), top = 10f.udp(), bottom = 10f.udp())) {
-        SlotText(state.system?.title ?: "", 16f, bold = true, color = SlotColors.Ink.copy(alpha = .7f), modifier = Modifier.padding(start = 8f.udp(), bottom = 6f.udp()))
-        LazyColumn(Modifier.fillMaxSize(), state = list) {
+        SlotText(
+            (state.system?.title ?: "").uppercase(), 11.5f, bold = true, align = TextAlign.Center,
+            color = SlotColors.Ink.copy(alpha = .5f), modifier = Modifier.fillMaxWidth().padding(bottom = 8f.udp()),
+        )
+        LazyColumn(
+            Modifier.fillMaxSize().onSizeChanged { listH = it.height }, state = list,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = with(LocalDensity.current) { halfPad.toDp() }),
+        ) {
             itemsIndexed(shelf, key = { _, g -> g.id }) { i, g ->
                 val on = i == sel
                 val newLetter = i == 0 || state.letterOf(shelf[i - 1]) != state.letterOf(g)
