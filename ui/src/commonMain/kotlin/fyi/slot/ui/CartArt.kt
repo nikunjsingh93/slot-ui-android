@@ -312,9 +312,15 @@ class CartPainter private constructor(
     // --- optical discs ----------------------------------------------------------------------------------
 
     private fun DrawScope.paintDisc(d: DiscSpec, alpha: Float) {
-        paintShadow(alpha)
         val o = spec.outline
         val c = Offset(d.cx, d.cy)
+        val umd = game.system.shape == CartShape.UMD
+        if (umd && discScan && cover != null) {
+            // a scan of the whole UMD (caddy and all): it is the cart (our own outline's shadow would show round it)
+            drawImage(cover, dstOffset = IntOffset.Zero, dstSize = IntSize(spec.w.toInt(), spec.h.toInt()), alpha = alpha)
+            return
+        }
+        paintShadow(alpha)
         drawPath(o, if (d.rimText) shell.color else Color(0xFFD7D9E0), alpha = alpha)
         clipPath(o) {
             // the reflective data surface seen through the plastic
@@ -357,7 +363,17 @@ class CartPainter private constructor(
             drawCircle(Color.Black.copy(alpha = (if (d.rimText) .55f else .18f) * alpha), d.labelRadius, c, style = Stroke(if (d.rimText) 1.4f else 0.9f))
             // brand lettering on the rim, above the label
             val ink = if (game.system == GameSystem.DC) Color(0xFFE8631A) else if (lightShell) Color(0xFF2A2A30) else Color.White
-            letterText?.takeIf { d.rimText }?.let { t ->
+            if (umd) {
+                // "PSP" bottom left and the controller mark bottom right, moulded into the white caddy
+                val grey = Color(0xFF9C9DA6)
+                letterText?.let { t -> drawText(t, grey, topLeft = Offset(16f, spec.h - 16f - t.size.height), alpha = alpha) }
+                val gx = spec.w - 40f
+                val gy = spec.h - 30f
+                drawRoundRect(grey.copy(alpha = alpha), Offset(gx, gy), Size(22f, 9f), CornerRadius(4f))
+                drawRoundRect(grey.copy(alpha = alpha), Offset(gx - 1f, gy + 3f), Size(8f, 11f), CornerRadius(4f))
+                drawRoundRect(grey.copy(alpha = alpha), Offset(gx + 15f, gy + 3f), Size(8f, 11f), CornerRadius(4f))
+            }
+            letterText?.takeIf { d.rimText && !umd }?.let { t ->
                 val y = c.y - (d.radius + d.labelRadius) / 2f - t.size.height / 2f
                 drawText(t, ink.copy(alpha = .85f), topLeft = Offset(c.x - t.size.width / 2f, y), alpha = alpha)
             }
@@ -372,10 +388,16 @@ class CartPainter private constructor(
                 }
             }
             // clear hub ring and the centre hole's inner shadow
-            drawCircle(Color.White.copy(alpha = .30f * alpha), d.hubRadius, c)
-            drawCircle(Color.Black.copy(alpha = .35f * alpha), d.hubRadius, c, style = Stroke(1.2f))
-            drawCircle(Color.White.copy(alpha = .35f * alpha), d.hubRadius - 4f, c, style = Stroke(1f))
-            drawCircle(Color.Black.copy(alpha = .5f * alpha), d.holeRadius + 1.5f, c, style = Stroke(2f))
+            if (umd) {
+                // a UMD is sealed: no hole, just the white printed centre
+                drawCircle(Color(0xFFF3F3F5), d.hubRadius, c, alpha = alpha)
+                drawCircle(Color.Black.copy(alpha = .18f * alpha), d.hubRadius, c, style = Stroke(1f))
+            } else {
+                drawCircle(Color.White.copy(alpha = .30f * alpha), d.hubRadius, c)
+                drawCircle(Color.Black.copy(alpha = .35f * alpha), d.hubRadius, c, style = Stroke(1.2f))
+                drawCircle(Color.White.copy(alpha = .35f * alpha), d.hubRadius - 4f, c, style = Stroke(1f))
+                drawCircle(Color.Black.copy(alpha = .5f * alpha), d.holeRadius + 1.5f, c, style = Stroke(2f))
+            }
             // light sweeping across the disc
             drawCircle(
                 Brush.sweepGradient(
@@ -396,7 +418,7 @@ class CartPainter private constructor(
     companion object {
         /** Per cart shape, the area a real label is fitted into (design units), roughly where it sits on the real cart. */
         private val REAL_LABEL_AREA = mapOf(
-            CartShape.N64 to Rect(40f, 16f, 200f, 172f),
+            CartShape.N64 to Rect(64f, 10f, 176f, 154f),
             CartShape.SNES to Rect(20f, 18f, 220f, 114f),
             CartShape.NES to Rect(30f, 44f, 210f, 206f),
         )
@@ -424,9 +446,11 @@ class CartPainter private constructor(
                 CartShape.GBC -> assets.letteringGbc
                 else -> null
             }
-            val letterText = if (lettering == null) assets.measurer.measure(
-                game.system.lettering,
-                if (disc != null) style.copy(fontSize = ((disc.radius - disc.labelRadius) * 0.5f).sp, letterSpacing = 0.5.sp)
+            // (a real N64 cart has no lettering on its front)
+            val letterText = if (lettering == null && game.system.shape != CartShape.N64) assets.measurer.measure(
+                if (game.system.shape == CartShape.UMD) "PSP" else game.system.lettering,
+                if (game.system.shape == CartShape.UMD) style.copy(fontSize = 17.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Normal)
+                else if (disc != null) style.copy(fontSize = ((disc.radius - disc.labelRadius) * 0.5f).sp, letterSpacing = 0.5.sp)
                 else style.copy(fontSize = (spec.w / 19f).sp, letterSpacing = (spec.w / 110f).sp),
                 density = Unit1,
             ) else null

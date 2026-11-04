@@ -290,15 +290,37 @@ private fun CartSpecs.disc(size: Float, labelR: Float, hub: Float, hole: Float):
 }
 
 private fun CartSpecs.n64(): CartSpec {
-    val outline = roundedPoly(pts(0f, 8f, 8f, 0f, 232f, 0f, 240f, 8f, 240f, 158f, 224f, 172f, 224f, 206f, 16f, 206f, 16f, 172f, 0f, 158f), 6f)
-    val ridges = gripSlots(14f, 12f, 38f, 6.5f, 2.6f, 5, mirrorTo = 226f)
+    // the real cart from the front: wide and short, a gently arched top, two side panels split off by seams,
+    // and a tall label in the middle
+    // the top is one arch: big rounded shoulders on the side panels, rising to a gently curved middle
+    val outline = Path().apply {
+        moveTo(12f, 162f)
+        quadraticTo(6f, 162f, 6f, 156f)
+        // near the bottom the side panels step in, where the cart goes into the console
+        lineTo(6f, 134f)
+        lineTo(0f, 129f)
+        lineTo(0f, 46f)
+        cubicTo(0f, 20f, 14f, 8f, 40f, 6f)
+        lineTo(58f, 4f)
+        quadraticTo(120f, -4f, 182f, 4f)
+        lineTo(200f, 6f)
+        cubicTo(226f, 8f, 240f, 20f, 240f, 46f)
+        lineTo(240f, 129f)
+        lineTo(234f, 134f)
+        lineTo(234f, 156f)
+        quadraticTo(234f, 162f, 228f, 162f)
+        close()
+    }
     return CartSpec(
-        w = 240f, h = 206f, outline = outline,
-        label = Rect(26f, 50f, 214f, 150f), labelRadius = 3f, rim = 6f,
+        w = 240f, h = 162f, outline = outline,
+        label = Rect(70f, 18f, 170f, 146f), labelRadius = 4f, rim = 6f,
         relief = listOf(
-            Relief(ridges, raised = true),
-            Relief(rectPath(70f, 160f, 100f, 5f), raised = false),
-            Relief(rectPath(100f, 184f, 40f, 6f), raised = false),
+            // seams between the side panels and the middle
+            Relief(rectPath(57f, 5f, 2.2f, 157f), raised = false),
+            Relief(rectPath(181f, 5f, 2.2f, 157f), raised = false),
+            // the step near the bottom of each side panel
+            Relief(rectPath(6f, 133f, 48f, 2f), raised = false),
+            Relief(rectPath(186f, 133f, 48f, 2f), raised = false),
         ),
         pinsTop = .9f, letteringY = 22f,
     )
@@ -323,19 +345,17 @@ private fun umdShell(w: Float, h: Float, top: Float, bottom: Float): Path = Path
  * (printed label, clear hub) inside a smoky shell, not as a cartridge.
  */
 private fun CartSpecs.umd(): CartSpec {
+    // the real UMD: a white caddy, round on top and nearly square at the bottom, with the sealed disc (no hole)
+    // seen through a window a little above the middle, "PSP" and a controller mark along the bottom
     val s = 232f
-    val c = s / 2f
-    val shell = umdShell(s, s, 104f, 9f)
-    val outline = Path().apply {
-        fillType = PathFillType.EvenOdd
-        addPath(shell)
-        addOval(Rect(c - 11f, c - 11f, c + 11f, c + 11f))
-    }
+    val cx = s / 2f
+    val cy = 106f
+    val outline = umdShell(s, s, 108f, 18f)
     return CartSpec(
         w = s, h = s, outline = outline,
-        label = Rect(c - 92f, c - 92f, c + 92f, c + 92f), labelRadius = 92f, rim = 5f,
+        label = Rect(cx - 94f, cy - 94f, cx + 94f, cy + 94f), labelRadius = 94f, rim = 5f,
         relief = emptyList(), pinsTop = 1f, letteringY = 10f,
-        disc = DiscSpec(c, c, c - 6f, 92f, 32f, 11f, rimText = true),
+        disc = DiscSpec(cx, cy, 100f, 94f, 36f, 0f, rimText = true),
     )
 }
 

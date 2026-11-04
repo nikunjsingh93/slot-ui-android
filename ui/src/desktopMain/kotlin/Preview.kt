@@ -103,6 +103,7 @@ fun main(args: Array<String>) {
     if (which == "folders") folderCheck()
     if (which == "covermatch") coverMatchCheck(out)
     if (which == "launchbox") launchBoxCheck(out)
+    if (which == "shapes") shapeShots(out)
     if (which == "labelcut") labelCutCheck(out, File(args[2]))
     if (which == "consoles") consoleShots(out)
     if (which == "readme") readmeShots(out)
@@ -404,4 +405,15 @@ fun labelCutCheck(out: File, dir: File) {
         println("${f.name}: $box")
     }
     javax.imageio.ImageIO.write(sheet, "png", File(out, "labelcut.png"))
+}
+
+/** The drawn N64 cart and PSP UMD (made-up games, no art). */
+fun shapeShots(out: File) {
+    val lib = listOf("Sky Ferry", "Tidal Sprint", "Umbra Peaks").map { sample(GameSystem.N64, it) } +
+        listOf("Xeno Trails", "Yonder Isle", "Zephyr Street").map { sample(GameSystem.PSP, it) }
+    for ((name, sys) in listOf("shape_n64" to 0, "shape_psp" to 1)) {
+        val st = SlotState().apply { setLibrary(lib); systemIndex = sys; setLibrary(lib); select(1); gamepad = true }
+        val s = Shoot(out, name, 1280, 960) { SlotRoot(st) }
+        s.ms(900); s.snap(); s.close()
+    }
 }

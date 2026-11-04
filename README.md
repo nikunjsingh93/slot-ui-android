@@ -58,8 +58,11 @@ or box art appear. With your own games the labels show title screens and box art
    `Gran Turismo 4.iso` still finds `Gran Turismo 4 (USA)`), then from the game's Wikipedia page. Put your own
    `<rom name>.png` into `Android/data/fyi.slot.android/files/labels` to override it, or turn the download off in
    **Settings > Library**.
-6. **Disc systems** (PS1, PS2, PSP, Dreamcast, GameCube, Xbox, Xbox 360, PS3) get a scan of the **real disc** from the
-   free LaunchBox games database, matched by the game's name (no account needed). Discs it doesn't have keep the box art.
+6. **Disc systems** (PS1, PS2, PSP, Dreamcast, GameCube, Xbox, Xbox 360, PS3) get a scan of the **real disc** (PSP: the whole
+   UMD) from the
+   free LaunchBox games database, matched by the game's name (no account needed; PS1 also falls back to the PSX1G1B1C1D
+   collection). N64, SNES and NES carts get their real label, cut out of LaunchBox's photo of the cartridge and drawn in its
+   real shape. Anything without these keeps the box art.
 
 **BIOS files** go in `Android/data/fyi.slot.android/files/system`. **gpSP** needs `gba_bios.bin` there (without it slot
 quietly uses mGBA). For **Flycast** (Dreamcast) put `dc_boot.bin` and `dc_flash.bin` in your Dreamcast folder and slot
