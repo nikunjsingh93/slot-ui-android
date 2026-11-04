@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.11** (`versionCode` 12) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.11` with `slot-android-0.1.11.apk` attached. Everything the user asked for so far is
+Version **0.1.12** (`versionCode` 13) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.12` with `slot-android-0.1.12.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -20,7 +20,7 @@ emulator); cart size and drawer options; touch scrolling in menus; backup of cho
 
 ## Recently Completed (newest first, all in git history)
 
-- Per-system on-screen button size and position (`Settings.touchTweaks`, six indices per system id, menu-driven not drag; `layoutFor` in Menus.kt) (0.1.11). Tested on the tablet. A drag-to-place editor was not built.
+- Edit button layout editor (drag to move, pinch to resize, Reset, Done): `LayoutEditor.kt`, `Overlay.EditLayout`, `Settings.touchTweaks` = six floats per system (d-pad scale,x,y, buttons scale,x,y), stored under `touchLayout` (0.1.12). Replaced the short-lived menu-based sliders of 0.1.11. Pinch was not tested (adb cannot send two fingers); drag and Reset were.
 
 - Portrait game picture moved down by default; `Settings.portraitScreenStep` (0-5, 3% of height each, default 3), Settings > Screen (0.1.10). Tested on a 1000x1524 tablet.
 

@@ -53,24 +53,14 @@ private fun SlotState.gameplayPage(): MenuPage = MenuPage(
     ),
 )
 
-/** Settings > Controls > On-screen buttons: size and position of the d-pad and the face buttons, for each system. */
-private fun SlotState.touchPage(): MenuPage = MenuPage(
-    "On-screen buttons",
-    GameSystem.entries.filter { !it.external }.map { sys ->
-        MenuSub(sys.title) {
-            fun tweak() = settings.touchTweaks[sys.id] ?: TOUCH_DEFAULT
-            fun row(label: String, slot: Int, labels: List<String>) = MenuChoice(label, labels, { tweak()[slot] }) { i ->
-                update { s -> s.copy(touchTweaks = s.touchTweaks + (sys.id to tweak().toMutableList().also { it[slot] = i })) }
-            }
-            MenuPage(sys.title, listOf(
-                row("D-pad size", 0, TOUCH_SIZES), row("D-pad left / right", 1, TOUCH_OFFSETS), row("D-pad up / down", 2, TOUCH_OFFSETS),
-                row("Buttons size", 3, TOUCH_SIZES), row("Buttons left / right", 4, TOUCH_OFFSETS), row("Buttons up / down", 5, TOUCH_OFFSETS),
-                MenuAction("Reset to default") { update { s -> s.copy(touchTweaks = s.touchTweaks - sys.id) }; popMenu() },
-            ), subtitle = "Moves are a share of the screen")
-        }
-    },
-)
 
+
+/** Settings > Controls > Edit button layout: pick a system, then drag and pinch its buttons into place. */
+private fun SlotState.touchPage(): MenuPage = MenuPage(
+    "Edit button layout",
+    GameSystem.entries.filter { !it.external }.map { sys -> MenuAction(sys.title) { openLayoutEditor(sys) } },
+    subtitle = "Choose a system",
+)
 
 private fun SlotState.controlsPage(): MenuPage = MenuPage(
     "Controls",
@@ -79,7 +69,7 @@ private fun SlotState.controlsPage(): MenuPage = MenuPage(
             update { it.copy(showTouchControls = TouchMode.entries[i]) }
         },
         MenuToggle("Swap A/B and X/Y", { settings.swapFaceButtons }) { v -> update { it.copy(swapFaceButtons = v) } },
-        MenuSub("On-screen buttons") { touchPage() },
+        MenuSub("Edit button layout") { touchPage() },
         MenuToggle("Interface sounds", { settings.sounds }) { v -> update { it.copy(sounds = v) } },
     ),
 )

@@ -50,7 +50,7 @@ PlayStation, PS2, N64, GameCube, PSP and Dreamcast run in their own emulators, w
 
 - **In-game saves (battery saves)** are written for you: every few seconds while you play and again when you eject.
   You never have to do anything for the game's own "Save" to stick.
-- **On-screen buttons:** Settings > Controls > On-screen buttons (also in the pause menu under Controls) lets you set, for each system, the size of the d-pad and of the face buttons (60-140%) and move each group left/right and up/down (-20% to +20% of the screen). "Reset to default" undoes it.
+- **Edit button layout:** Settings > Controls > Edit button layout (also in the pause menu under Controls). Pick a system and its on-screen buttons appear over the game: drag the d-pad or the A/B buttons to move them, pinch over a group to resize it, **Reset** puts the defaults back and **Done** keeps the layout. Each system keeps its own layout.
 - **Portrait screen position:** with on-screen controls in portrait the game picture sits a little below the top edge. Change it in the pause menu or Settings > Screen > Screen position (portrait): Top, Down 1 to Down 5 (default Down 3).
 - **Pause menu:** press **MENU** during a game (on a touchscreen tap the **MENU** pill at the top). It has **Eject** (first, so Back then A quits), **Resume**,
   **Save states**, **Quick save**, **Quick load**, **Fast forward**, **Screen**, **Gameplay**, **Controls**,

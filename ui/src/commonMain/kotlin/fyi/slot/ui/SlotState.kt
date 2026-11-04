@@ -40,6 +40,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     /** Index of the app whose options sheet (Open / App info / Uninstall) is showing, or null. */
     var drawerMenu by mutableStateOf<Int?>(null)
     var drawerMenuCursor by mutableIntStateOf(0)
+    /** The system whose on-screen buttons are being edited (Overlay.EditLayout). */
+    var editSystem by mutableStateOf<GameSystem?>(null)
 
     /** Monotonic counter bumped on every move; lets the shelf play a tick without diffing. */
     var moveTick by mutableIntStateOf(0)
@@ -368,6 +370,27 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         host.sfx(Sfx.Select)
     }
 
+    fun openLayoutEditor(sys: GameSystem) {
+        menuStack.clear(); menuCursor.clear()
+        editSystem = sys
+        overlay = Overlay.EditLayout
+        host.sfx(Sfx.Select)
+    }
+
+    fun closeLayoutEditor() {
+        editSystem = null
+        overlay = Overlay.None
+        if (screen == Screen.Playing) host.onAction(GameAction.Resume)
+        host.sfx(Sfx.Back)
+    }
+
+    /** Keeps (or with null, forgets) the button layout of one system. */
+    fun saveTouchLayout(sys: GameSystem, tweak: List<Float>?) {
+        val keep = tweak != null && tweak != TOUCH_DEFAULT
+        settings = settings.copy(touchTweaks = if (keep) settings.touchTweaks + (sys.id to tweak!!) else settings.touchTweaks - sys.id)
+        host.onSettingsChanged(settings)
+    }
+
     fun openDrawer() {
         drawerApps = host.listApps()
         drawerCursor = 0
@@ -537,6 +560,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                 else -> {}
             }
             Overlay.States -> statesPress(pad, repeat)
+            Overlay.EditLayout -> if (!repeat && (pad == Pad.B || pad == Pad.Menu || pad == Pad.A)) closeLayoutEditor()
             Overlay.Drawer -> drawerPress(pad, repeat)
             else -> {}
         }

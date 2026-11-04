@@ -56,6 +56,7 @@ fun Menus(state: SlotState, m: Metrics, gameProcess: Boolean = false) {
             Overlay.Quick, Overlay.Settings -> MenuScrim(state, m)
             Overlay.States -> StateSwitcher(state, m)
             Overlay.Drawer -> AppDrawer(state, m)
+            Overlay.EditLayout -> LayoutEditor(state, m)
             else -> {}
         }
     }
@@ -266,15 +267,15 @@ private fun PolaroidCard(s: StateSlot, selected: Boolean, scale: Float, w: Float
 
 // --- touch controls ---------------------------------------------------------------------------------
 
-private class TouchButtonSpec(val pad: Pad, val cx: Float, val cy: Float, val r: Float, val label: String)
+internal class TouchButtonSpec(val pad: Pad, val cx: Float, val cy: Float, val r: Float, val label: String)
 
-private class TouchLayout(val dpadCx: Float, val dpadCy: Float, val dpadR: Float, val buttons: List<TouchButtonSpec>, val pills: List<Triple<Pad, Rectish, String>>)
+internal class TouchLayout(val dpadCx: Float, val dpadCy: Float, val dpadR: Float, val buttons: List<TouchButtonSpec>, val pills: List<Triple<Pad, Rectish, String>>)
 
-private data class Rectish(val l: Float, val t: Float, val r: Float, val b: Float) {
+internal data class Rectish(val l: Float, val t: Float, val r: Float, val b: Float) {
     fun contains(p: Offset, slack: Float) = p.x in (l - slack)..(r + slack) && p.y in (t - slack)..(b + slack)
 }
 
-private fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Int> = TOUCH_DEFAULT): TouchLayout {
+internal fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Float> = TOUCH_DEFAULT): TouchLayout {
     val u = m.u
     val w = m.w
     val h = m.h
@@ -318,11 +319,8 @@ private fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Int> = TOUCH_DEFA
     }
     pills += Triple(Pad.Menu, Rectish(pcx - 28 * u, 12 * u, pcx + 28 * u, 12 * u + 24 * u), "MENU")
     val t = if (tweak.size == 6) tweak else TOUCH_DEFAULT
-    val dS = (60 + 10 * t[0]) / 100f
-    val bS = (60 + 10 * t[3]) / 100f
-    fun off(i: Int) = (-20 + 5 * i) / 100f
-    val scaled = btns.map { b -> TouchButtonSpec(b.pad, cx + (b.cx - cx) * bS + off(t[4]) * w, cy + (b.cy - cy) * bS + off(t[5]) * h, b.r * bS, b.label) }
-    return TouchLayout(dpadCx + off(t[1]) * w, dpadCy + off(t[2]) * h, dpadR * dS, scaled, pills)
+    val scaled = btns.map { b -> TouchButtonSpec(b.pad, cx + (b.cx - cx) * t[3] + t[4] * w, cy + (b.cy - cy) * t[3] + t[5] * h, b.r * t[3], b.label) }
+    return TouchLayout(dpadCx + t[1] * w, dpadCy + t[2] * h, dpadR * t[0], scaled, pills)
 }
 
 @Composable
@@ -356,21 +354,7 @@ fun TouchControls(state: SlotState, sys: GameSystem, m: Metrics) {
             }
         },
     ) {
-        Canvas(Modifier.fillMaxSize()) { drawTouch(layout, pressed, m) }
-        for (b in layout.buttons) {
-            Box(
-                Modifier.offset { IntOffset((b.cx - b.r).roundToInt(), (b.cy - b.r).roundToInt()) }
-                    .size((b.r * 2f).pxToDp(), (b.r * 2f).pxToDp()),
-                contentAlignment = Alignment.Center,
-            ) { SlotText(b.label, 20f, color = Color.White.copy(alpha = .85f), bold = true) }
-        }
-        for ((_, r, label) in layout.pills) {
-            Box(
-                Modifier.offset { IntOffset(r.l.roundToInt(), r.t.roundToInt()) }
-                    .size((r.r - r.l).pxToDp(), (r.b - r.t).pxToDp()),
-                contentAlignment = Alignment.Center,
-            ) { SlotText(label, 11.5f, color = Color.White.copy(alpha = .85f), bold = true) }
-        }
+        TouchArt(layout, pressed, m)
     }
 }
 
@@ -390,7 +374,7 @@ private fun hit(l: TouchLayout, p: Offset): Set<Pad> {
     return out
 }
 
-private fun DrawScope.drawTouch(l: TouchLayout, pressed: Set<Pad>, m: Metrics) {
+internal fun DrawScope.drawTouch(l: TouchLayout, pressed: Set<Pad>, m: Metrics) {
     val u = m.u
     val base = Color.White
     // d-pad
@@ -425,5 +409,27 @@ private fun DrawScope.drawTouch(l: TouchLayout, pressed: Set<Pad>, m: Metrics) {
         val on = pad in pressed
         drawRoundRect(base.copy(alpha = if (on) .42f else .16f), Offset(r.l, r.t), Size(r.r - r.l, r.b - r.t), CornerRadius((r.b - r.t) / 2f))
         drawRoundRect(base.copy(alpha = .35f), Offset(r.l, r.t), Size(r.r - r.l, r.b - r.t), CornerRadius((r.b - r.t) / 2f), style = Stroke(1.4f * u))
+    }
+}
+
+/** The on-screen buttons as drawn during play (also used by the layout editor). */
+@Composable
+internal fun TouchArt(layout: TouchLayout, pressed: Set<Pad>, m: Metrics) {
+    Box(Modifier.fillMaxSize()) {
+        Canvas(Modifier.fillMaxSize()) { drawTouch(layout, pressed, m) }
+        for (b in layout.buttons) {
+            Box(
+                Modifier.offset { IntOffset((b.cx - b.r).roundToInt(), (b.cy - b.r).roundToInt()) }
+                    .size((b.r * 2f).pxToDp(), (b.r * 2f).pxToDp()),
+                contentAlignment = Alignment.Center,
+            ) { SlotText(b.label, 20f, color = Color.White.copy(alpha = .85f), bold = true) }
+        }
+        for ((_, r, label) in layout.pills) {
+            Box(
+                Modifier.offset { IntOffset(r.l.roundToInt(), r.t.roundToInt()) }
+                    .size((r.r - r.l).pxToDp(), (r.b - r.t).pxToDp()),
+                contentAlignment = Alignment.Center,
+            ) { SlotText(label, 11.5f, color = Color.White.copy(alpha = .85f), bold = true) }
+        }
     }
 }
