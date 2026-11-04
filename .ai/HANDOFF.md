@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.23** (`versionCode` 24) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.23` with `slot-android-0.1.23.apk` attached. Everything the user asked for so far is
+Version **0.1.24** (`versionCode` 25) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.24` with `slot-android-0.1.24.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -19,6 +19,8 @@ cover art with fuzzy matching and a Wikipedia fallback; Settings > Emulators (de
 emulator); cart size and drawer options; touch scrolling in menus; backup of choices in the ROM folder; fixed signing key.
 
 ## Recently Completed (newest first, all in git history)
+
+- 0.1.24: Settings > Interface > List text size (`Settings.listSize`, `ListSize` scale 0.85-1.4 applied to row height, heading height and fonts in `GameListPanel`).
 
 - 0.1.23: list wraps seamlessly (three copies, middle one shown) instead of jumping from last to first; letter headings above each letter group again (variable row step handled when mapping `scroll` to the list); dark copy of the list clipped to the fixed highlight so names stay readable while passing; scanner skips BIOS files (`Scanner.isBios`: scph*, *bios*, dc_boot/flash/nvmem, mcpx).
 

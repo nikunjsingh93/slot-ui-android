@@ -49,6 +49,8 @@ data class Settings(
     val cartSize: CartSize = CartSize.Default,
     /** Shelf view: false = carts only (slot), true = a list of games beside the cart. */
     val shelfList: Boolean = false,
+    /** List view text size. */
+    val listSize: ListSize = ListSize.Medium,
     val drawerGrid: Boolean = true,
     val drawerSize: DrawerSize = DrawerSize.Medium,
     /** Settings > Emulators: system id -> the core or emulator used unless a game has its own choice. */
@@ -110,3 +112,6 @@ enum class Sfx { Insert, Eject, Tick, Select, Back }
 
 /** No change: scale 1 and no offset for both the d-pad and the face buttons. */
 val TOUCH_DEFAULT = listOf(1f, 0f, 0f, 1f, 0f, 0f)
+
+/** List view text size; rows grow with the text so the highlight still fits. */
+enum class ListSize(val label: String, val scale: Float) { Small("Small", 0.85f), Medium("Medium", 1f), Large("Large", 1.2f), XLarge("Extra large", 1.4f) }

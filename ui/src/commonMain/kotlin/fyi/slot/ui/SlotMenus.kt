@@ -193,6 +193,9 @@ private fun SlotState.interfacePage(): MenuPage = MenuPage(
         MenuChoice("Cart size", CartSize.entries.map { it.label }, { settings.cartSize.ordinal }) { i ->
             update { it.copy(cartSize = CartSize.entries[i]) }
         },
+        MenuChoice("List text size", ListSize.entries.map { it.label }, { settings.listSize.ordinal }) { i ->
+            update { it.copy(listSize = ListSize.entries[i]) }
+        },
         MenuChoice("Shelf view", listOf("Carts", "List + cart"), { if (settings.shelfList) 1 else 0 }) { i ->
             update { it.copy(shelfList = i == 1) }
         },

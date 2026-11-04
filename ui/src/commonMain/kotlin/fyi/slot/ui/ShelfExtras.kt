@@ -86,8 +86,12 @@ fun GameListPanel(state: SlotState, m: Metrics) {
     val n = shelf.size
     if (n == 0) return
     val density = LocalDensity.current
-    val rowPx = with(density) { ROW.udp().toPx() }
-    val headPx = with(density) { HEAD.udp().toPx() }
+    // Settings > Interface > List text size scales the rows and the text together
+    val k = state.settings.listSize.scale
+    val row = ROW * k
+    val head = HEAD * k
+    val rowPx = with(density) { row.udp().toPx() }
+    val headPx = with(density) { head.udp().toPx() }
     val top = m.topBar + 6f * m.u
     val bottom = m.bandTop - 6f * m.u
     val listH = (bottom - top).coerceAtLeast(rowPx)
@@ -99,7 +103,7 @@ fun GameListPanel(state: SlotState, m: Metrics) {
     val gameRow = remember(rows) { rows.withIndex().filter { it.value.game >= 0 }.groupBy { it.value.copy }.mapValues { (_, v) -> v.map { it.index } } }
     val light = rememberLazyListState()
     val dark = rememberLazyListState()
-    LaunchedEffect(rows, halfPad) {
+    LaunchedEffect(rows, halfPad, rowPx) {
         snapshotFlow { state.scroll }.collect { s ->
             val base = kotlin.math.floor(s)
             val i = ((base.toInt() % n) + n) % n
@@ -125,24 +129,24 @@ fun GameListPanel(state: SlotState, m: Metrics) {
                 onDragStopped = { v -> state.fling(-v / rowPx) },
             ),
     ) {
-        Box(Modifier.align(Alignment.Center).fillMaxWidth().height(ROW.udp()).clip(RoundedCornerShape(9f.udp())).background(SlotColors.Ink))
+        Box(Modifier.align(Alignment.Center).fillMaxWidth().height(row.udp()).clip(RoundedCornerShape(9f.udp())).background(SlotColors.Ink))
         // the list as it reads everywhere else (light ink)
         LazyColumn(
             Modifier.fillMaxSize(),
             state = light, userScrollEnabled = false, contentPadding = PaddingValues(vertical = padDp),
         ) {
-            items(rows.size, key = { rows[it].key }) { k -> ListRow(state, shelf, rows[k], dark = false) }
+            items(rows.size, key = { rows[it].key }) { it2 -> ListRow(state, shelf, rows[it2], dark = false, k = k) }
         }
         // the same list in dark ink, visible only inside the highlight
         Box(
-            Modifier.align(Alignment.Center).fillMaxWidth().height(ROW.udp()).clipToBounds()
+            Modifier.align(Alignment.Center).fillMaxWidth().height(row.udp()).clipToBounds()
                 .clickable { state.current?.let { if (state.screen == Screen.Browse) state.insert(it, resume = true) } },
         ) {
             LazyColumn(
                 Modifier.requiredHeight(with(density) { listH.toDp() }).fillMaxWidth(),
                 state = dark, userScrollEnabled = false, contentPadding = PaddingValues(vertical = padDp),
             ) {
-                items(rows.size, key = { rows[it].key }) { k -> ListRow(state, shelf, rows[k], dark = true) }
+                items(rows.size, key = { rows[it].key }) { it2 -> ListRow(state, shelf, rows[it2], dark = true, k = k) }
             }
         }
     }
@@ -162,27 +166,27 @@ private fun buildRows(state: SlotState, shelf: List<Game>, copies: Int): List<Li
 }
 
 @Composable
-private fun ListRow(state: SlotState, shelf: List<Game>, line: ListLine, dark: Boolean) {
+private fun ListRow(state: SlotState, shelf: List<Game>, line: ListLine, dark: Boolean, k: Float) {
     if (line.game < 0) {
-        Box(Modifier.fillMaxWidth().height(HEAD.udp()).padding(start = 10f.udp()), contentAlignment = Alignment.BottomStart) {
-            SlotText(line.letter.toString(), 12f, bold = true, color = (if (dark) SlotColors.CapInk else SlotColors.Ink).copy(alpha = .45f))
+        Box(Modifier.fillMaxWidth().height((HEAD * k).udp()).padding(start = 10f.udp()), contentAlignment = Alignment.BottomStart) {
+            SlotText(line.letter.toString(), 12f * k, bold = true, color = (if (dark) SlotColors.CapInk else SlotColors.Ink).copy(alpha = .45f))
         }
         return
     }
     val g = shelf[line.game]
     val ink = if (dark) SlotColors.CapInk else SlotColors.Ink.copy(alpha = .85f)
     Row(
-        Modifier.fillMaxWidth().height(ROW.udp())
+        Modifier.fillMaxWidth().height((ROW * k).udp())
             .then(if (dark) Modifier else Modifier.clickable {
                 if (line.game == state.selected) { if (state.screen == Screen.Browse) state.insert(g, resume = true) } else state.selectIndex(line.game)
             })
             .padding(horizontal = 10f.udp()),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SlotText(g.title, 15f, bold = dark, color = ink, modifier = Modifier.weight(1f))
+        SlotText(g.title, 15f * k, bold = dark, color = ink, modifier = Modifier.weight(1f))
         if (g.hasSave) {
             Spacer(Modifier.width(6f.udp()))
-            SlotText("saved", 11f, color = ink.copy(alpha = .55f))
+            SlotText("saved", 11f * k, color = ink.copy(alpha = .55f))
         }
     }
 }
