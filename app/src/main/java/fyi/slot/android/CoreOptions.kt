@@ -33,8 +33,11 @@ object CoreOptions {
                 if (gb) mgbaPalette(s.gbPalette)?.let { v += Variable("mgba_gb_colors", it) }
             }
             "flycast" -> {
-                v += Variable("flycast_threaded_rendering", "disabled")
-                v += Variable("flycast_internal_resolution", "640x480")
+                // this build still uses the old reicast_ option names; threaded rendering needs a shared GL context
+                // LibretroDroid does not provide, and leaves the screen black
+                v += Variable("reicast_threaded_rendering", "disabled")
+                v += Variable("reicast_delay_frame_swapping", "disabled")
+                v += Variable("reicast_internal_resolution", "640x480")
             }
             "gambatte" -> {
                 v += Variable("gambatte_gbc_color_correction", if (s.colorCorrection) "accurate" else "disabled")

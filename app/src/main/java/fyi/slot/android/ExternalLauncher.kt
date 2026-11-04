@@ -29,6 +29,20 @@ object ExternalLauncher {
         Emulator("armsx2", "com.armsx2", "ARMSX2") { _, _, uri ->
             Intent(Intent.ACTION_VIEW).setClassName("com.armsx2", "com.armsx2.BootSplashActivity").grant(uri)
         },
+        // ARMSX3 (PS3, same team and same "open this file" splash screen as ARMSX2); Play Store builds use their own id
+        Emulator("armsx3", "com.armsx3", "ARMSX3") { _, _, uri ->
+            Intent(Intent.ACTION_VIEW).setClassName("com.armsx3", "com.armsx2.BootSplashActivity").grant(uri)
+        },
+        Emulator("armsx3", "com.armsx3.play", "ARMSX3") { _, _, uri ->
+            Intent(Intent.ACTION_VIEW).setClassName("com.armsx3.play", "com.armsx2.BootSplashActivity").grant(uri)
+        },
+        // hakuX (original Xbox): its launcher boots the disc image it is handed as intent data
+        Emulator("hakux", "com.rfandango.haku_x", "hakuX") { _, _, uri ->
+            Intent(Intent.ACTION_VIEW).setClassName("com.rfandango.haku_x", "com.rfandango.haku_x.LauncherActivity").grant(uri)
+        },
+        // Xendroid+ (Xbox 360): its emulator host takes the game in "game_uri"; release builds carry a ".fork" suffix
+        Emulator("xendroid", "xendroid.compose.fork", "Xendroid+") { g, _, uri -> xendroid("xendroid.compose.fork", g, uri) },
+        Emulator("xendroid", "xendroid.compose", "Xendroid+") { g, _, uri -> xendroid("xendroid.compose", g, uri) },
         // M64Plus FZ: an "open this file" request, zips and all
         Emulator("mupen64fz", "org.mupen64plusae.v3.fzurita.pro", "M64Plus FZ Pro") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.fromFile(File(path)))
@@ -51,6 +65,12 @@ object ExternalLauncher {
         },
     )
 
+
+    private fun xendroid(pkg: String, game: Game, uri: Uri): Intent =
+        Intent("xendroid.intent.action.xendroid").setClassName(pkg, "xendroid.compose.EmulatorHostActivity")
+            .putExtra("game_uri", uri.toString()).putExtra("game_name", game.title)
+            .putExtra("disc_paths", arrayOf(uri.toString())).putExtra("disc_labels", arrayOf(game.title))
+            .grant(uri)
     /** Lets the emulator read this document through the storage access framework, as the folder you picked allows slot to. */
     private fun Intent.grant(uri: Uri): Intent = apply {
         data = uri
@@ -91,7 +111,7 @@ object ExternalLauncher {
         val path = pathOf(game) ?: return Result.Failed("Slot can't work out where ${game.title} is stored")
         val choices = candidates(game)
         for (c in choices) {
-            val emu = emulators.firstOrNull { it.core == c.id } ?: continue
+            val emu = emulators.firstOrNull { it.core == c.id && isInstalled(ctx, it.pkg) } ?: continue
             if (!isInstalled(ctx, emu.pkg)) continue
             return runCatching {
                 ctx.startActivity(emu.build(game, path, Uri.parse(game.uri)))

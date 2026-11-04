@@ -233,6 +233,7 @@ class GameActivity : ComponentActivity(), SlotHost {
     }
 
     private suspend fun onFirstFrame(view: GLRetroView) {
+        if (BuildConfig.DEBUG) runCatching { view.getVariables().forEach { Log.d("slotvars", "${it.key}=${it.value}") } }
         if (intent.getBooleanExtra(EXTRA_RESUME, true)) {
             val s = withContext(Dispatchers.IO) { store.read(0) }
             if (s != null) {

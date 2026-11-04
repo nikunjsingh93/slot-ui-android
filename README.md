@@ -96,6 +96,9 @@ folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`
 | GameCube | Dolphin, or Dolphin MMJR | `.iso`, `.ciso`, `.gcm`, `.rvz`, `.gcz`, `.wbfs` |
 | PSP | PPSSPP | `.iso`, `.cso`, `.pbp`, `.chd` |
 | Dreamcast | Redream | `.chd`, `.gdi`, `.cdi`, `.cue` |
+| Xbox | hakuX | `.iso`, `.xiso` (folder `Xbox`) |
+| PlayStation 3 | ARMSX3 | `.iso` (folder `PS3`) |
+| Xbox 360 | Xendroid+ | `.iso`, `.xex`, `.zar` (folder `X360` / `Xbox 360`) |
 
 PSP games are UMDs (a rounded caddy with the disc inside). Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
 and come back to slot, the disc pops back out of the slot. Cover art for discs is cropped from the libretro box art.

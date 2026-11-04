@@ -13,6 +13,11 @@
         <package android:name="com.github.stenzek.duckstation" />
         <package android:name="xyz.aethersx2.android" />
         <package android:name="com.armsx2" />
+        <package android:name="com.armsx3" />
+        <package android:name="com.armsx3.play" />
+        <package android:name="com.rfandango.haku_x" />
+        <package android:name="xendroid.compose.fork" />
+        <package android:name="xendroid.compose" />
         <package android:name="org.mupen64plusae.v3.fzurita.pro" />
         <package android:name="org.dolphinemu.dolphinemu" />
         <package android:name="org.dolphinemu.mmjr" />

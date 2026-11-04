@@ -147,6 +147,27 @@ enum class GameSystem(
         "DREAMCAST", Color(0xFFE8631A),
         external = true, uniqueExt = setOf("gdi", "cdi"),
     ),
+    XBOX(
+        "xbox", "Xbox", "XBOX", CartShape.DISC_PS2, setOf("iso", "xiso", "cci"),
+        "Microsoft - Xbox",
+        listOf(CoreChoice("hakux", "hakuX", "Opens your installed hakuX.", external = true)),
+        "XBOX", Color(0xFF3A8A3A),
+        external = true, uniqueExt = setOf("xiso", "cci"),
+    ),
+    PS3(
+        "ps3", "PlayStation 3", "PS3", CartShape.DISC_PS2, setOf("iso", "pkg"),
+        "Sony - PlayStation 3",
+        listOf(CoreChoice("armsx3", "ARMSX3", "Opens your installed ARMSX3.", external = true)),
+        "PlayStation 3", Color(0xFF30343C),
+        external = true, uniqueExt = emptySet(),
+    ),
+    X360(
+        "x360", "Xbox 360", "360", CartShape.DISC_PS2, setOf("iso", "xex", "zar", "god"),
+        "Microsoft - Xbox 360",
+        listOf(CoreChoice("xendroid", "Xendroid+", "Opens your installed Xendroid+.", external = true)),
+        "XBOX 360", Color(0xFF7CB342),
+        external = true, uniqueExt = setOf("xex", "zar"),
+    ),
     /** Android apps you chose to show as plain apps. */
     APPS(
         "apps", "Apps", "Apps", CartShape.APP_CARD, emptySet(),
@@ -185,6 +206,9 @@ enum class GameSystem(
                 N64 to listOf("n64", "nintendo64", "nintendon64"),
                 GC to listOf("gc", "ngc", "gamecube", "nintendogamecube", "nintendogc"),
                 DC to listOf("dc", "dreamcast", "segadreamcast", "segadc", "sdc"),
+                XBOX to listOf("xbox", "xboxoriginal", "originalxbox", "microsoftxbox", "xbx"),
+                PS3 to listOf("ps3", "playstation3", "sonyplaystation3", "sonyps3"),
+                X360 to listOf("x360", "xbox360", "360", "microsoftxbox360", "xb360"),
             )
         }
 
