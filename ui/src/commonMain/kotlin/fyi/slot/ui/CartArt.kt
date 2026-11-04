@@ -116,7 +116,7 @@ class CartPainter private constructor(
      * True when [cover] is a scan of the disc itself (LaunchBox disc scans: a round disc on a transparent square)
      * rather than box art, so it is drawn whole and centred instead of cropped like a case cover.
      */
-    private val discScan: Boolean = spec.disc != null && cover?.let { img ->
+    private val clearCorners: Boolean = cover?.let { img ->
         runCatching {
             val px = IntArray(1)
             listOf(2 to 2, img.width - 3 to 2, 2 to img.height - 3, img.width - 3 to img.height - 3).all { (x, y) ->
@@ -125,6 +125,22 @@ class CartPainter private constructor(
             }
         }.getOrDefault(false)
     } == true
+    private val discScan: Boolean = spec.disc != null && clearCorners
+
+    /**
+     * A real N64 / SNES / NES label cut out of a photo of the cartridge (it comes with rounded, transparent corners):
+     * the label window then takes the real label's own shape, placed where it sits on the real cart.
+     */
+    private val realLabel: Boolean = spec.disc == null && clearCorners && REAL_LABEL_AREA.containsKey(game.system.shape)
+
+    /** Where the label is drawn: the cart's own window, or for a [realLabel] the real label's shape fitted into its area. */
+    private val labelRect: Rect = if (!realLabel || cover == null) spec.label else {
+        val area = REAL_LABEL_AREA.getValue(game.system.shape)
+        val s = min(area.width / cover.width, area.height / cover.height)
+        val w = cover.width * s
+        val h = cover.height * s
+        Rect(area.center.x - w / 2f, area.center.y - h / 2f, area.center.x + w / 2f, area.center.y + h / 2f)
+    }
     private val glitter: List<Offset> by lazy {
         var s = 0x2545F491L
         fun next(): Float { s = s * 1103515245L + 12345L; return ((s shr 8) and 0xFFFF).toFloat() / 65535f }
@@ -215,8 +231,8 @@ class CartPainter private constructor(
     }
 
     private fun DrawScope.paintLabel(alpha: Float) {
-        val l = spec.label
-        val r = spec.labelRadius
+        val l = labelRect
+        val r = if (realLabel) 5f else spec.labelRadius
         // recess around the label
         drawRoundRect(
             Color.Black.copy(alpha = .42f * alpha),
@@ -286,7 +302,8 @@ class CartPainter private constructor(
                 alpha = .92f * alpha, colorFilter = ColorFilter.colorMatrix(lumaToAlpha(if (lightShell) 38f else 255f)),
             )
         }
-        letterText?.let { t ->
+        // a real label carries its own branding over where the lettering would be
+        letterText?.takeIf { !realLabel }?.let { t ->
             drawText(t, tint.copy(alpha = .9f), topLeft = Offset((spec.w - t.size.width) / 2f, spec.letteringY), alpha = alpha)
         }
     }
@@ -377,6 +394,12 @@ class CartPainter private constructor(
     }
 
     companion object {
+        /** Per cart shape, the area a real label is fitted into (design units), roughly where it sits on the real cart. */
+        private val REAL_LABEL_AREA = mapOf(
+            CartShape.N64 to Rect(40f, 16f, 200f, 172f),
+            CartShape.SNES to Rect(20f, 18f, 220f, 114f),
+            CartShape.NES to Rect(30f, 44f, 210f, 206f),
+        )
         fun create(assets: CartAssets, game: Game, cover: ImageBitmap?): CartPainter {
             val spec = CartSpecs.of(game)
             val shell = Shells.forGame(game)

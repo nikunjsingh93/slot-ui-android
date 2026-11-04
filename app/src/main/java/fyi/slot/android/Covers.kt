@@ -51,9 +51,12 @@ class Covers(private val ctx: Context) {
         // Game Boy, Color and Advance: the real label from slot's own art server, matched by the ROM's CRC32
         if (game.system in SLOT_ART_SYSTEMS) real(game, "label", allowNetwork) { fromSlotArt(game) }?.let { return@withContext it }
         // disc systems: a scan of the real disc from the LaunchBox games database, matched by name
-        if (game.system.id in LAUNCHBOX_SYSTEMS) real(game, "disc", allowNetwork) { fromLaunchBox(game) }?.let { return@withContext it }
+        if (game.system.id in LAUNCHBOX_SYSTEMS) real(game, "disc", allowNetwork) {
+            // PS1: the PSX1G1B1C1D collection when LaunchBox has no disc for the game
+            fromLaunchBox(game) ?: if (game.system.id == "psx") fromPsxDiscs(game) else null
+        }?.let { return@withContext it }
         // N64, SNES, NES: the label cut out of a LaunchBox photo of the real cartridge
-        if (game.system.id in LAUNCHBOX_CARTS) real(game, "cart", allowNetwork) { fromLaunchBox(game)?.let(::cutLabel) }?.let { return@withContext it }
+        if (game.system.id in LAUNCHBOX_CARTS) real(game, "cartlabel", allowNetwork) { fromLaunchBox(game)?.let(::cutLabel) }?.let { return@withContext it }
         val hit = File(cache, "${game.id}.png")
         if (hit.exists()) return@withContext decode(hit)
         val miss = File(cache, "${game.id}.miss")
@@ -130,6 +133,32 @@ class Covers(private val ctx: Context) {
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
     }
 
+    @Volatile private var psxDiscs: CoverMatch.Index? = null
+
+    /** A PS1 disc scan from github.com/UnluckyForSome/PSX1G1B1C1D (names listed in art/psx1g1b1c1d/disc.json of this repo). */
+    private fun fromPsxDiscs(game: Game): Bitmap? {
+        val index = psxDiscs ?: synchronized(locks.getOrPut("psx1g1b1c1d") { Any() }) {
+            psxDiscs ?: run {
+                val f = File(indexDir, "psx1g1b1c1d-disc.json")
+                if (!f.exists() || System.currentTimeMillis() - f.lastModified() > INDEX_MS) {
+                    get(PSX_DISC_LIST)?.takeIf { it.isNotEmpty() && it[0] == '['.code.toByte() }?.let { body ->
+                        File(indexDir, "psx1g1b1c1d-disc.part").also { it.writeBytes(body) }.renameTo(f)
+                    }
+                }
+                if (!f.exists()) return null
+                val a = org.json.JSONArray(f.readText())
+                CoverMatch.Index(List(a.length()) { a.getString(it) }).also { psxDiscs = it }
+            }
+        }
+        val name = CoverMatch.best(game.stem, index) ?: return null
+        val bytes = get(PSX_DISC_IMAGES + enc(name) + ".png") ?: return null
+        val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+        var sample = 1
+        while (opts.outWidth / (sample * 2) >= MAX_W) sample *= 2
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
+    }
+
     /** Just the printed label of a cartridge photo ([fyi.slot.ui.LabelCut]), or null when no clear label is found. */
     private fun cutLabel(photo: Bitmap): Bitmap? {
         val sw = 200
@@ -141,7 +170,15 @@ class Covers(private val ctx: Context) {
         val y = (b.top * photo.height).toInt().coerceIn(0, photo.height - 1)
         val w = ((b.right - b.left) * photo.width).toInt().coerceIn(1, photo.width - x)
         val h = ((b.bottom - b.top) * photo.height).toInt().coerceIn(1, photo.height - y)
-        return Bitmap.createBitmap(photo, x, y, w, h)
+        // rounded corners, like the real sticker; the clear corners also tell the cart painter this is a real label
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(out)
+        val radius = maxOf(10f, minOf(w, h) * 0.05f)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+        paint.shader = android.graphics.BitmapShader(photo, android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP)
+            .apply { setLocalMatrix(android.graphics.Matrix().apply { setTranslate(-x.toFloat(), -y.toFloat()) }) }
+        c.drawRoundRect(android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), radius, radius, paint)
+        return out
     }
 
     /** Set by the fetches: false after a failure to reach the server at all, so a dead connection isn't cached as "no cover". */
@@ -369,6 +406,9 @@ class Covers(private val ctx: Context) {
         private const val DISC_LISTS = "https://raw.githubusercontent.com/nikunjsingh93/slot-ui-android/main/art/launchbox/"
         private val LAUNCHBOX_SYSTEMS = setOf("psx", "ps2", "psp", "dc", "gc", "xbox", "x360", "ps3")
         private val LAUNCHBOX_CARTS = setOf("n64", "snes", "nes")
+        /** PS1 disc scans that LaunchBox lacks: the PSX1G1B1C1D collection on GitHub, and the list of its names kept in this repo. */
+        private const val PSX_DISC_IMAGES = "https://raw.githubusercontent.com/UnluckyForSome/PSX1G1B1C1D/main/library/disc/"
+        private const val PSX_DISC_LIST = "https://raw.githubusercontent.com/nikunjsingh93/slot-ui-android/main/art/psx1g1b1c1d/disc.json"
         private val NOT_ALNUM = Regex("[^A-Za-z0-9]+")
         private const val RETRY_MS = 7L * 24 * 3600 * 1000
         private const val INDEX_MS = 30L * 24 * 3600 * 1000
