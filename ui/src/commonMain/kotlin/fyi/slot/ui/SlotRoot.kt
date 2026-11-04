@@ -95,7 +95,7 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
 
     // The shelf spring, hold-to-repeat and drag settling all run on the frame clock.
     LaunchedEffect(Unit) {
-        snapshotFlow { Triple(state.target, state.heldDir, state.dragging) }.collectLatest {
+        snapshotFlow { Triple(state.target, state.heldDir, state.dragging || state.flingVel != 0f) }.collectLatest {
             runFrames { dt -> state.stepShelf(dt) }
         }
     }
@@ -171,7 +171,8 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
                         state.dragging = true
                         state.scroll -= dx / cwSel
                     },
-                    onDragStopped = { velocity -> state.settleAt(state.scroll - velocity / cwSel * 0.18f) },
+                    onDragStarted = { state.flingVel = 0f },
+                    onDragStopped = { velocity -> state.fling(-velocity / cwSel) },
                 )
                 .pointerInput(n, m) {
                     detectTapGestures(

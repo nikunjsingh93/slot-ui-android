@@ -99,29 +99,19 @@ fun MenuPanel(state: SlotState, m: Metrics, page: MenuPage, cursor: Int) {
     val rowH = 36f
     val maxRows = ((m.h / m.u - 150f) / rowH).toInt().coerceIn(4, 9)
     val n = page.items.size
-    // Touch scrolling moves the window of rows on its own; moving the cursor (D-pad) brings it back to the cursor.
-    var dragged by remember(page) { mutableStateOf<Int?>(null) }
-    LaunchedEffect(cursor) { dragged = null }
-    val first = dragged ?: (cursor - maxRows / 2).coerceIn(0, (n - maxRows).coerceAtLeast(0))
-    val shownFirst by rememberUpdatedState(first)
-    val shown = page.items.subList(first, (first + maxRows).coerceAtMost(n))
+    // A native list, so a swipe flings and coasts like the app drawer; the D-pad cursor is kept in view.
+    val list = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = (cursor - maxRows / 2).coerceIn(0, (n - maxRows).coerceAtLeast(0)))
+    LaunchedEffect(page, cursor) {
+        val info = list.layoutInfo.visibleItemsInfo
+        val firstFull = info.firstOrNull { it.offset >= 0 }?.index ?: list.firstVisibleItemIndex
+        val lastFull = info.lastOrNull { it.offset + it.size <= list.layoutInfo.viewportEndOffset }?.index ?: (firstFull + maxRows - 1)
+        if (cursor < firstFull || cursor > lastFull) list.scrollToItem((cursor - maxRows / 2).coerceIn(0, (n - maxRows).coerceAtLeast(0)))
+    }
     Column(
         Modifier.width(panelW.udp()).clip(RoundedCornerShape(14f.udp())).background(SlotColors.Housing)
             .border(1.2f.udp(), SlotColors.Edge, RoundedCornerShape(14f.udp()))
             .pointerInput(Unit) { detectTapGestures { } }
-            .pointerInput(page, n, maxRows) {
-                var acc = 0f
-                val rowPx = rowH * m.u
-                detectVerticalDragGestures(onDragStart = { acc = 0f }) { change, dy ->
-                    change.consume()
-                    acc += dy
-                    val step = (acc / rowPx).toInt()
-                    if (step != 0) {
-                        acc -= step * rowPx
-                        dragged = ((dragged ?: shownFirst) - step).coerceIn(0, (n - maxRows).coerceAtLeast(0))
-                    }
-                }
-            }.padding(vertical = 10f.udp()),
+            .padding(vertical = 10f.udp()),
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16f.udp(), vertical = 6f.udp()), verticalAlignment = Alignment.CenterVertically) {
             if (state.menuStack.size > 1) {
@@ -135,28 +125,33 @@ fun MenuPanel(state: SlotState, m: Metrics, page: MenuPage, cursor: Int) {
             IconButton(IconKind.Close, 28f) { state.closeOverlay() }
         }
         Spacer(Modifier.height(4f.udp()))
-        shown.forEachIndexed { k, item ->
-            val idx = first + k
-            val sel = idx == cursor && item.selectable
-            Row(
-                Modifier.fillMaxWidth().height(rowH.udp()).padding(horizontal = 8f.udp())
-                    .clip(RoundedCornerShape(9f.udp()))
-                    .background(if (sel) SlotColors.Ink else Color.Transparent)
-                    .clickable(enabled = item.selectable) { state.tapMenuRow(idx) }
-                    .padding(horizontal = 12f.udp()),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val ink = if (sel) SlotColors.CapInk else SlotColors.Ink.copy(alpha = if (item.selectable) 1f else .6f)
-                SlotText(item.label, 15.5f, modifier = Modifier.weight(1f), color = ink, bold = sel)
-                when (item) {
-                    is MenuToggle -> Pill(if (item.get()) "On" else "Off", on = item.get(), selected = sel)
-                    is MenuChoice -> {
-                        val t = item.options.getOrElse(item.get()) { "" }
-                        SlotText(if (sel) "‹ $t ›".replace("‹", "<").replace("›", ">") else t, 14f, color = if (sel) SlotColors.CapInk else SlotColors.Ink.copy(alpha = .75f), bold = sel)
+        androidx.compose.foundation.lazy.LazyColumn(
+            Modifier.fillMaxWidth().height((rowH * minOf(n, maxRows)).udp()),
+            state = list,
+        ) {
+            items(n) { idx ->
+                val item = page.items[idx]
+                val sel = idx == cursor && item.selectable
+                Row(
+                    Modifier.fillMaxWidth().height(rowH.udp()).padding(horizontal = 8f.udp())
+                        .clip(RoundedCornerShape(9f.udp()))
+                        .background(if (sel) SlotColors.Ink else Color.Transparent)
+                        .clickable(enabled = item.selectable) { state.tapMenuRow(idx) }
+                        .padding(horizontal = 12f.udp()),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val ink = if (sel) SlotColors.CapInk else SlotColors.Ink.copy(alpha = if (item.selectable) 1f else .6f)
+                    SlotText(item.label, 15.5f, modifier = Modifier.weight(1f), color = ink, bold = sel)
+                    when (item) {
+                        is MenuToggle -> Pill(if (item.get()) "On" else "Off", on = item.get(), selected = sel)
+                        is MenuChoice -> {
+                            val t = item.options.getOrElse(item.get()) { "" }
+                            SlotText(if (sel) "‹ $t ›".replace("‹", "<").replace("›", ">") else t, 14f, color = if (sel) SlotColors.CapInk else SlotColors.Ink.copy(alpha = .75f), bold = sel)
+                        }
+                        is MenuSub -> SlotText(">", 16f, color = ink.copy(alpha = .7f), bold = true)
+                        is MenuInfo -> SlotText(item.value, 14f, color = SlotColors.Ink.copy(alpha = .6f))
+                        is MenuAction -> item.detail?.let { SlotText(it, 12f, color = ink.copy(alpha = .6f)) }
                     }
-                    is MenuSub -> SlotText(">", 16f, color = ink.copy(alpha = .7f), bold = true)
-                    is MenuInfo -> SlotText(item.value, 14f, color = SlotColors.Ink.copy(alpha = .6f))
-                    is MenuAction -> item.detail?.let { SlotText(it, 12f, color = ink.copy(alpha = .6f)) }
                 }
             }
         }

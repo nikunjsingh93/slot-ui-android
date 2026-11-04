@@ -54,6 +54,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     private var velocity = 0f
     /** True while a finger is dragging the shelf (the spring is paused). */
     var dragging by mutableStateOf(false)
+    /** Carts per second the shelf is coasting at after a fling (0 when not coasting). */
+    var flingVel by mutableFloatStateOf(0f)
     /** Free-running clock (ms) advanced by [stepShelf]; hold-to-repeat is timed against it. */
     private var clockMs = 0f
     var heldDir by mutableIntStateOf(0)
@@ -70,7 +72,20 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                 heldFired++
             }
         } else heldDir = 0
-        if (dragging) return true
+        if (dragging) { followScroll(); return true }
+        if (flingVel != 0f) {
+            // coast with friction, picking carts as they pass the middle, then hand over to the spring
+            scroll += flingVel * dt
+            flingVel *= kotlin.math.exp(-FLING_FRICTION * dt)
+            followScroll()
+            if (kotlin.math.abs(flingVel) < FLING_STOP) {
+                velocity = flingVel
+                target = kotlin.math.round(scroll + flingVel / FLING_FRICTION).toInt()
+                selected = ringIndex(target, shelf.size.coerceAtLeast(1))
+                flingVel = 0f
+            }
+            return true
+        }
         // `accel = -2*w*v - w^2*(x - target)` integrated with sub-steps so it stays stable at low frame rates
         var left = dt
         while (left > 0f) {
@@ -105,11 +120,27 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         host.sfx(Sfx.Tick)
     }
 
+    /** While a finger or a fling moves the shelf, the cart nearest the middle becomes the selection (with a tick). */
+    private fun followScroll() {
+        val n = shelf.size
+        if (n == 0) return
+        val i = ringIndex(kotlin.math.round(scroll).toInt(), n)
+        if (i != selected) { selected = i; moveTick++; host.sfx(Sfx.Tick) }
+    }
+
+    /** A drag ended with [cartsPerSecond]: a slow release settles on the nearest cart, a flick keeps the shelf coasting. */
+    fun fling(cartsPerSecond: Float) {
+        dragging = false
+        if (shelf.size < 3 || kotlin.math.abs(cartsPerSecond) < FLING_STOP) { settleAt(scroll + cartsPerSecond * 0.12f); return }
+        flingVel = cartsPerSecond.coerceIn(-FLING_MAX, FLING_MAX)
+    }
+
     /** Called when a drag ends: settle on the nearest cart. */
     fun settleAt(position: Float) {
         val n = shelf.size
         if (n == 0) return
         scroll = position
+        flingVel = 0f
         val t = kotlin.math.round(position).toInt()
         target = t
         selected = ringIndex(t, n)
@@ -589,6 +620,10 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         const val HOLD_DELAY_MS = 400f
         val HOLD_RATES = floatArrayOf(110f, 85f, 65f, 50f)
         const val MENU_DOUBLE_TAP_MS = 380L
+        /** Shelf fling: velocity decay per second, the speed below which it settles, and the top speed (carts/s). */
+        const val FLING_FRICTION = 2.4f
+        const val FLING_STOP = 1.6f
+        const val FLING_MAX = 45f
     }
 }
 
