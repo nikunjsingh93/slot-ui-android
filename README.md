@@ -52,7 +52,9 @@ or box art appear. With your own games the labels show title screens and box art
    BIOS files lying next to the games (`scph5501.bin`, `dc_boot.bin`, ...) are ignored.
 4. The first time you start a PlayStation, N64, PSP or Dreamcast game inside slot, it asks once for Android's
    **All files access**: those emulators read the game where it is instead of copying a disc image.
-5. Cart art is fetched once and cached: first from the libretro thumbnail server (file names are matched loosely, so
+5. Cart art is fetched once and cached. Game Boy, Game Boy Color and GBA carts get a scan of the **real label** from
+   slot's own art server (matched by the ROM's checksum), or the game's logo on a label of its colour. Everything else
+   (and any cart not on that server) comes from the libretro thumbnail server (file names are matched loosely, so
    `Gran Turismo 4.iso` still finds `Gran Turismo 4 (USA)`), then from the game's Wikipedia page. Put your own
    `<rom name>.png` into `Android/data/fyi.slot.android/files/labels` to override it, or turn the download off in
    **Settings > Library**.
@@ -246,4 +248,5 @@ Notes for contributors and AI coding agents are in `AGENTS.md` and `.ai/`.
 * Emulator apps that slot opens (DuckStation, AetherSX2/NetherSX2, ARMSX2, ARMSX3, Dolphin, PPSSPP, Redream,
   M64Plus FZ, hakuX, Xendroid+, RetroArch) are separate projects, installed by you.
 * No games, BIOS or firmware are included; you supply your own.
-* Thumbnails come from the libretro thumbnail server and Wikipedia.
+* Real Game Boy, Game Boy Color and GBA label scans come from slot's art server (art.slot-cfw.fyi) by Brandon Kowalski;
+  other thumbnails come from the libretro thumbnail server and Wikipedia.

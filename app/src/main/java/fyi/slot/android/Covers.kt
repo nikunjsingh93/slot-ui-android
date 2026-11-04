@@ -23,10 +23,12 @@ import java.net.URLEncoder
  * Label art for the carts. In order of preference:
  *  1. a PNG/JPG you drop into `Android/data/fyi.slot.android/files/labels/<rom name>.png`
  *     (same idea as slot's custom cart labels),
- *  2. the libretro thumbnail server (box art or title screen; the file list of each set is cached and the
+ *  2. for Game Boy, Color and Advance: a scan of the real label from slot's own art server (art.slot-cfw.fyi,
+ *     matched by the ROM's CRC32), or failing that the game's logo on a label of its colour,
+ *  3. the libretro thumbnail server (box art or title screen; the file list of each set is cached and the
  *     ROM name is matched loosely against it, so "Gran Turismo 4.iso" finds "Gran Turismo 4 (USA) (v1.01)"),
- *  3. the cover shown on the game's English Wikipedia page,
- *  4. nothing, and the cart gets a generated label.
+ *  4. the cover shown on the game's English Wikipedia page,
+ *  5. nothing, and the cart gets a generated label.
  * Whatever is found is cached on disk.
  */
 class Covers(private val ctx: Context) {
@@ -42,6 +44,26 @@ class Covers(private val ctx: Context) {
         for (ext in listOf("png", "jpg", "jpeg", "webp")) {
             val f = File(custom, "${game.stem}.$ext")
             if (f.exists()) decode(f)?.let { return@withContext it }
+        }
+        // Game Boy, Color and Advance: the real label from slot's own art server, matched by the ROM's CRC32
+        if (game.system in SLOT_ART_SYSTEMS) {
+            val real = File(cache, "${game.id}.label.png")
+            if (real.exists()) decode(real)?.let { return@withContext it }
+            val realMiss = File(cache, "${game.id}.label.miss")
+            if (allowNetwork && !(realMiss.exists() && System.currentTimeMillis() - realMiss.lastModified() < RETRY_MS)) {
+                val bmp = try {
+                    gate.withPermit { fromSlotArt(game) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
+                if (bmp != null) {
+                    real.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 95, it) }
+                    return@withContext scaled(bmp).asImageBitmap()
+                }
+                if (online) realMiss.writeText("x")
+            }
         }
         val hit = File(cache, "${game.id}.png")
         if (hit.exists()) return@withContext decode(hit)
@@ -76,6 +98,106 @@ class Covers(private val ctx: Context) {
 
     private fun scaled(b: Bitmap): Bitmap =
         if (b.width <= MAX_W) b else Bitmap.createScaledBitmap(b, MAX_W, (b.height * MAX_W.toFloat() / b.width).toInt().coerceAtLeast(1), true)
+
+    // --- slot's art server (art.slot-cfw.fyi) --------------------------------------------------------
+
+    /** One game in slot's art index: a scan of the real label, the game's logo, and the label colour behind it. */
+    private class SlotArt(val real: String?, val wheel: String?, val ground: Int?)
+
+    @Volatile private var slotIndex: Map<Long, SlotArt>? = null
+
+    /** slot's index (CRC32 -> art), cached on disk and refreshed weekly with an ETag so an unchanged index is not downloaded again. */
+    private fun slotIndex(): Map<Long, SlotArt> {
+        slotIndex?.let { return it }
+        synchronized(this) {
+            slotIndex?.let { return it }
+            val f = File(indexDir, "slot-art.json")
+            val tag = File(indexDir, "slot-art.etag")
+            if (!f.exists() || System.currentTimeMillis() - f.lastModified() > SLOT_INDEX_MS) {
+                try {
+                    (URL(SLOT_ART + "index.json").openConnection() as HttpURLConnection).run {
+                        connectTimeout = 8000; readTimeout = 30000
+                        setRequestProperty("User-Agent", AGENT)
+                        if (f.exists() && tag.exists()) setRequestProperty("If-None-Match", tag.readText())
+                        when (responseCode) {
+                            200 -> {
+                                val body = inputStream.use { it.readBytes() }
+                                File(indexDir, "slot-art.part").also { it.writeBytes(body) }.renameTo(f)
+                                getHeaderField("ETag")?.let { tag.writeText(it) }
+                            }
+                            304 -> f.setLastModified(System.currentTimeMillis())
+                        }
+                        disconnect()
+                    }
+                    online = true
+                } catch (_: java.io.IOException) {
+                    online = false
+                }
+            }
+            if (!f.exists()) return emptyMap()
+            val json = JSONObject(f.readText())
+            val out = HashMap<Long, SlotArt>(json.length() * 2)
+            for (key in json.keys()) {
+                val o = json.optJSONObject(key) ?: continue
+                val ground = o.optJSONObject("look")?.optString("ground")?.takeIf { it.length == 6 }?.toIntOrNull(16)
+                val art = SlotArt(o.optString("support-texture").ifEmpty { null }, o.optString("wheel").ifEmpty { null }, ground)
+                key.toLongOrNull(16)?.let { out[it] = art }
+                o.optJSONArray("crcs")?.let { a -> for (i in 0 until a.length()) a.optString(i).toLongOrNull(16)?.let { out[it] = art } }
+            }
+            return out.also { slotIndex = it }
+        }
+    }
+
+    private fun fromSlotArt(game: Game): Bitmap? {
+        val index = slotIndex()
+        if (index.isEmpty()) return null
+        val art = index[romCrc(game) ?: return null] ?: return null
+        // the server keeps a smaller .webp beside each .png
+        fun image(path: String): Bitmap? =
+            (get(SLOT_ART + path.removeSuffix(".png") + ".webp") ?: get(SLOT_ART + path))?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+        art.real?.let(::image)?.let { return it }
+        return art.wheel?.let(::image)?.let { logoLabel(it, art.ground, game) }
+    }
+
+    /** No scan of the label: the game's logo on a label of its own colour (what slot calls a house label). */
+    private fun logoLabel(logo: Bitmap, ground: Int?, game: Game): Bitmap {
+        val l = fyi.slot.ui.CartSpecs.of(game).label
+        val w = MAX_W
+        val h = (w * l.height / l.width).toInt().coerceAtLeast(1)
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(out)
+        c.drawColor(android.graphics.Color.rgb(((ground ?: 0x2A2D33) shr 16) and 0xFF, ((ground ?: 0x2A2D33) shr 8) and 0xFF, (ground ?: 0x2A2D33) and 0xFF))
+        val s = minOf(w * .82f / logo.width, h * .72f / logo.height)
+        val lw = logo.width * s
+        val lh = logo.height * s
+        c.drawBitmap(logo, null, android.graphics.RectF((w - lw) / 2f, (h - lh) / 2f, (w + lw) / 2f, (h + lh) / 2f), android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+        return out
+    }
+
+    /** CRC32 of the ROM itself (of the file inside a .zip), as the No-Intro sets and slot's index name it. */
+    private fun romCrc(game: Game): Long? = runCatching {
+        val uri = android.net.Uri.parse(game.uri)
+        val input = if (uri.scheme == "file") File(uri.path!!).inputStream() else ctx.contentResolver.openInputStream(uri)
+        input?.buffered(1 shl 16)?.use { raw ->
+            if (game.entryName.isEmpty()) crcOf(raw) else {
+                val zin = java.util.zip.ZipInputStream(raw)
+                var e = zin.nextEntry
+                while (e != null && e.name != game.entryName) e = zin.nextEntry
+                e?.let { crcOf(zin) }
+            }
+        }
+    }.getOrNull()
+
+    private fun crcOf(s: java.io.InputStream): Long {
+        val crc = java.util.zip.CRC32()
+        val buf = ByteArray(1 shl 16)
+        while (true) {
+            val n = s.read(buf)
+            if (n < 0) break
+            crc.update(buf, 0, n)
+        }
+        return crc.value
+    }
 
     // --- libretro thumbnails -----------------------------------------------------------------------
 
@@ -178,6 +300,11 @@ class Covers(private val ctx: Context) {
 
     companion object {
         private const val MAX_W = 640
+        private const val AGENT = "slot-android/0.1 (https://github.com/nikunjsingh93/slot-ui-android)"
+        /** slot's own label art (scans of the real labels, by ROM CRC32): Game Boy, Game Boy Color and Game Boy Advance. */
+        private const val SLOT_ART = "https://art.slot-cfw.fyi/"
+        private val SLOT_ART_SYSTEMS = setOf(fyi.slot.ui.GameSystem.GB, fyi.slot.ui.GameSystem.GBC, fyi.slot.ui.GameSystem.GBA)
+        private const val SLOT_INDEX_MS = 7L * 24 * 3600 * 1000
         private val NOT_ALNUM = Regex("[^A-Za-z0-9]+")
         private const val RETRY_MS = 7L * 24 * 3600 * 1000
         private const val INDEX_MS = 30L * 24 * 3600 * 1000
