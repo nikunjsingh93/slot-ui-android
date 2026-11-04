@@ -102,6 +102,8 @@ folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`
 
 PSP games are UMDs (a rounded caddy with the disc inside). Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
 and come back to slot, the disc pops back out of the slot. Cover art for discs is cropped from the libretro box art.
+Every system slot emulates itself also offers **RetroArch** as a choice (START on a game, or Settings > Emulators). Slot opens RetroArch with the same libretro core it bundles (mGBA, Gambatte, FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast, PCSX ReARMed, Mupen64Plus-Next, PPSSPP, Flycast), so download that core once in RetroArch's Online Updater.
+
 PS2 games open in ARMSX2 by default (it now runs better on Mali chips too); if ARMSX2 is not installed, AetherSX2 / NetherSX2 is used. To change that for every game, use **Settings > Emulators**, which lists each system that has more than one emulator or core (GBA, GB, GBC, PlayStation 2, GameCube) and lets you pick the default. Press START on a single disc or cart to pick one just for that game.
 
 Folder names are matched loosely, so `DC`, `dc`, `Dreamcast`, `Sega Dreamcast (Games)`, `PS1`, `Sony PlayStation`, `Game Cube`,

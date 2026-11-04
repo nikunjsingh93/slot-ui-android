@@ -8,6 +8,9 @@ enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD, N64, DISC
 /** [external] cores open an installed emulator app; the others are libretro cores bundled in slot. */
 data class CoreChoice(val id: String, val name: String, val tagline: String, val external: Boolean = false)
 
+/** Opens the game in RetroArch with the same libretro core slot would use. */
+val RETROARCH = CoreChoice("retroarch", "RetroArch", "Opens your installed RetroArch.", external = true)
+
 enum class GameSystem(
     val id: String,
     val title: String,
@@ -16,7 +19,7 @@ enum class GameSystem(
     val extensions: Set<String>,
     /** Folder name on thumbnails.libretro.com */
     val thumbDir: String,
-    val cores: List<CoreChoice>,
+    baseCores: List<CoreChoice>,
     val lettering: String,
     val tint: Color,
     /** True when the game is handed to an installed emulator app instead of a bundled libretro core. */
@@ -182,6 +185,8 @@ enum class GameSystem(
         "GAME", Color(0xFFE5534B),
         external = true, uniqueExt = emptySet(),
     );
+    /** The emulators to choose from: systems with a built-in core also offer RetroArch, if it is installed. */
+    val cores: List<CoreChoice> = if (baseCores.any { !it.external }) baseCores + RETROARCH else baseCores
 
     companion object {
         fun byId(id: String) = entries.firstOrNull { it.id == id }

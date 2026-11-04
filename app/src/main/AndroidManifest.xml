@@ -13,6 +13,8 @@
         <package android:name="com.github.stenzek.duckstation" />
         <package android:name="xyz.aethersx2.android" />
         <package android:name="com.armsx2" />
+        <package android:name="com.retroarch" />
+        <package android:name="com.retroarch.aarch64" />
         <package android:name="com.armsx3" />
         <package android:name="com.armsx3.play" />
         <package android:name="com.rfandango.haku_x" />

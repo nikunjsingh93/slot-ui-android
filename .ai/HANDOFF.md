@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.16** (`versionCode` 17) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.16` with `slot-android-0.1.16.apk` attached. Everything the user asked for so far is
+Version **0.1.17** (`versionCode` 18) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.17` with `slot-android-0.1.17.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -19,6 +19,8 @@ cover art with fuzzy matching and a Wikipedia fallback; Settings > Emulators (de
 emulator); cart size and drawer options; touch scrolling in menus; backup of choices in the ROM folder; fixed signing key.
 
 ## Recently Completed (newest first, all in git history)
+
+- 0.1.17: RetroArch offered as an external choice on every system with a built-in core (`RETROARCH` appended in `GameSystem.cores`; launch via RetroActivityFuture with ROM/LIBRETRO/CONFIGFILE extras, com.retroarch.aarch64 or com.retroarch). Not tested: RetroArch not installed on the test devices.
 
 - 0.1.16: ARMSX2 is the default PS2 emulator on every device (user: better Mali support now); AetherSX2/NetherSX2 second and used automatically when ARMSX2 is missing.
 

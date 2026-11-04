@@ -43,6 +43,10 @@ object ExternalLauncher {
         // Xendroid+ (Xbox 360): its emulator host takes the game in "game_uri"; release builds carry a ".fork" suffix
         Emulator("xendroid", "xendroid.compose.fork", "Xendroid+") { g, _, uri -> xendroid("xendroid.compose.fork", g, uri) },
         Emulator("xendroid", "xendroid.compose", "Xendroid+") { g, _, uri -> xendroid("xendroid.compose", g, uri) },
+        // RetroArch: its game activity takes the ROM path, the core library and the config file as extras. The core is
+        // the one slot itself bundles for the system, so it must be downloaded in RetroArch once (Online Updater).
+        Emulator("retroarch", "com.retroarch.aarch64", "RetroArch") { g, path, _ -> retroarch("com.retroarch.aarch64", g, path) },
+        Emulator("retroarch", "com.retroarch", "RetroArch") { g, path, _ -> retroarch("com.retroarch", g, path) },
         // M64Plus FZ: an "open this file" request, zips and all
         Emulator("mupen64fz", "org.mupen64plusae.v3.fzurita.pro", "M64Plus FZ Pro") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.fromFile(File(path)))
@@ -71,6 +75,16 @@ object ExternalLauncher {
             .putExtra("game_uri", uri.toString()).putExtra("game_name", game.title)
             .putExtra("disc_paths", arrayOf(uri.toString())).putExtra("disc_labels", arrayOf(game.title))
             .grant(uri)
+
+    private fun retroarch(pkg: String, game: Game, path: String): Intent {
+        val core = game.system.cores.firstOrNull { !it.external }?.id ?: "mgba"
+        return Intent(Intent.ACTION_MAIN).setClassName(pkg, "com.retroarch.browser.retroactivity.RetroActivityFuture")
+            .putExtra("ROM", path)
+            .putExtra("LIBRETRO", "/data/data/$pkg/cores/${core}_libretro_android.so")
+            .putExtra("CONFIGFILE", "/storage/emulated/0/Android/data/$pkg/files/retroarch.cfg")
+            .putExtra("QUITFOCUS", "")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    }
     /** Lets the emulator read this document through the storage access framework, as the folder you picked allows slot to. */
     private fun Intent.grant(uri: Uri): Intent = apply {
         data = uri
