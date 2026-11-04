@@ -106,6 +106,8 @@ object CartSpecs {
         CartShape.DISC_GC -> cache.getOrPut("gc") { disc(200f, labelR = 96f, hub = 30f, hole = 11f) }
         CartShape.DISC_DC -> cache.getOrPut("dc") { disc(240f, labelR = 116f, hub = 36f, hole = 13f) }
         CartShape.UMD -> cache.getOrPut("umd") { umd() }
+        CartShape.NDS -> cache.getOrPut("nds") { ndsCard() }
+        CartShape.N3DS -> cache.getOrPut("n3ds") { n3dsCard() }
         CartShape.APP_CARD -> cache.getOrPut("app") { appCard() }
     }
 
@@ -204,34 +206,67 @@ object CartSpecs {
 
     // --- Procedural carts -----------------------------------------------------------------------
 
+    /** The NES cart from the front: the tall ridged grip down the left, a tall label on the right with an arrow under it. */
     private fun nes(): CartSpec {
-        val outline = roundedPoly(pts(0f, 0f, 240f, 0f, 240f, 238f, 224f, 262f, 16f, 262f, 0f, 238f), 7f)
-        val slots = gripSlots(14f, 12f, 32f, 7f, 3.2f, 4, mirrorTo = 226f)
+        val outline = roundedPoly(pts(0f, 8f, 16f, 8f, 16f, 0f, 224f, 0f, 224f, 8f, 240f, 8f, 240f, 292f, 0f, 292f), 4f)
         return CartSpec(
-            w = 240f, h = 262f, outline = outline,
-            label = Rect(30f, 62f, 210f, 196f), labelRadius = 3f, rim = 6f,
+            w = 240f, h = 292f, outline = outline,
+            label = Rect(108f, 10f, 214f, 184f), labelRadius = 3f, rim = 6f,
             relief = listOf(
-                Relief(slots, raised = false),
-                Relief(rectPath(98f, 14f, 44f, 22f), raised = false),
-                Relief(rectPath(60f, 212f, 120f, 6f), raised = false),
+                // the ridged grip
+                Relief(gripSlots(24f, 14f, 52f, 12.6f, 3.2f, 21), raised = false),
+                Relief(rectPath(20f, 4f, 1.6f, 288f), raised = false),
+                Relief(rectPath(80f, 4f, 1.6f, 288f), raised = false),
+                // the arrow pointing into the console
+                Relief(Path().apply { moveTo(150f, 204f); lineTo(172f, 204f); lineTo(161f, 220f); close() }, raised = false),
             ),
             pinsTop = .92f, letteringY = 40f,
         )
     }
 
+    /**
+     * The Super Famicom / PAL SNES cart: a wide label across the top, grip ridges on the top corners, seams down to the
+     * recessed lower panel with its handle slot, and a screw in each bottom corner.
+     */
     private fun snes(): CartSpec {
-        val outline = roundedPoly(pts(0f, 0f, 240f, 0f, 240f, 124f, 224f, 142f, 224f, 170f, 16f, 170f, 16f, 142f, 0f, 124f), 6f)
+        val outline = roundedPoly(pts(0f, 6f, 6f, 0f, 234f, 0f, 240f, 6f, 240f, 152f, 234f, 158f, 6f, 158f, 0f, 152f), 5f)
         return CartSpec(
-            w = 240f, h = 170f, outline = outline,
-            label = Rect(26f, 42f, 214f, 108f), labelRadius = 3f, rim = 6f,
+            w = 240f, h = 158f, outline = outline,
+            label = Rect(30f, 10f, 210f, 68f), labelRadius = 3f, rim = 6f,
             relief = listOf(
-                
-                Relief(Path().apply {
-                    for (i in 0 until 7) addRect(Rect(40f + i * 26f, 120f, 40f + i * 26f + 4f, 156f))
-                }, raised = false),
-                Relief(rectPath(20f, 10f, 200f, 5f), raised = true),
+                Relief(gripSlots(2f, 14f, 9f, 6f, 2f, 5, mirrorTo = 229f), raised = false),
+                // seams either side of the lower panel, and its top edge
+                Relief(rectPath(46f, 74f, 2f, 84f), raised = false),
+                Relief(rectPath(192f, 74f, 2f, 84f), raised = false),
+                Relief(rectPath(46f, 74f, 148f, 1.6f), raised = false),
+                // the handle slot
+                Relief(Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(Rect(70f, 100f, 170f, 108f), androidx.compose.ui.geometry.CornerRadius(4f))) }, raised = false),
+                // screws
+                Relief(Path().apply { addOval(Rect(9f, 141f, 16f, 148f)); addOval(Rect(224f, 141f, 231f, 148f)) }, raised = false),
             ),
             pinsTop = .86f, letteringY = 18f,
+        )
+    }
+
+    /** A Nintendo DS game card: dark, "NINTENDO DS" along the top, the label below, a notch low on the right. */
+    private fun ndsCard(): CartSpec {
+        val outline = roundedPoly(pts(0f, 0f, 200f, 0f, 200f, 176f, 194f, 182f, 194f, 214f, 0f, 214f), 9f)
+        return CartSpec(
+            w = 200f, h = 214f, outline = outline,
+            label = Rect(12f, 34f, 188f, 180f), labelRadius = 5f, rim = 5f,
+            relief = listOf(Relief(rectPath(40f, 196f, 120f, 2f), raised = false)),
+            pinsTop = .9f, letteringY = 10f,
+        )
+    }
+
+    /** A Nintendo 3DS game card: light grey, the tab on the top right (so it can't go into a DS), "NINTENDO 3DS" on top. */
+    private fun n3dsCard(): CartSpec {
+        val outline = roundedPoly(pts(0f, 0f, 184f, 0f, 184f, 8f, 200f, 14f, 200f, 44f, 184f, 50f, 184f, 210f, 0f, 210f), 7f)
+        return CartSpec(
+            w = 200f, h = 210f, outline = outline,
+            label = Rect(12f, 34f, 172f, 196f), labelRadius = 5f, rim = 5f,
+            relief = emptyList(),
+            pinsTop = .9f, letteringY = 10f,
         )
     }
 

@@ -3,7 +3,7 @@ package fyi.slot.ui
 import androidx.compose.ui.graphics.Color
 
 /** Physical cart silhouette family. */
-enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD, N64, DISC_PSX, DISC_PS2, DISC_GC, DISC_DC, UMD, APP_CARD }
+enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD, N64, DISC_PSX, DISC_PS2, DISC_GC, DISC_DC, UMD, NDS, N3DS, APP_CARD }
 
 /** [external] cores open an installed emulator app; the others are libretro cores bundled in slot. */
 data class CoreChoice(val id: String, val name: String, val tagline: String, val external: Boolean = false)
@@ -140,6 +140,38 @@ enum class GameSystem(
         "PlayStation Portable", Color(0xFF3E6BB0),
         external = true, uniqueExt = setOf("cso"),
     ),
+    SWITCH(
+        "switch", "Nintendo Switch", "Switch", CartShape.APP_CARD, setOf("nsp", "xci", "nsz", "xcz", "nro"),
+        "Nintendo - Nintendo Switch",
+        listOf(
+            CoreChoice("eden", "Eden", "Opens your installed Eden.", external = true),
+            CoreChoice("kenjinx", "Kenji-NX", "Opens your installed Kenji-NX.", external = true),
+        ),
+        "NINTENDO SWITCH", Color(0xFFE60012),
+        external = true, uniqueExt = setOf("nsp", "xci", "nsz", "xcz"),
+    ),
+    NDS(
+        "nds", "Nintendo DS", "NDS", CartShape.NDS, setOf("nds", "dsi", "ids", "zip", "7z"),
+        "Nintendo - Nintendo DS",
+        listOf(
+            CoreChoice("melonds_app", "melonDS", "Opens your installed melonDS.", external = true),
+            CoreChoice("drastic", "DraStic", "Opens your installed DraStic.", external = true),
+        ),
+        "NINTENDO DS", Color(0xFF8C8C94),
+        external = true, uniqueExt = setOf("nds", "dsi", "ids"),
+    ),
+    N3DS(
+        "n3ds", "Nintendo 3DS", "3DS", CartShape.N3DS, setOf("3ds", "cci", "cia", "cxi", "3dsx", "z3dsx", "zcci", "zcxi", "app"),
+        "Nintendo - Nintendo 3DS",
+        listOf(
+            CoreChoice("azahar", "Azahar", "Opens your installed Azahar.", external = true),
+            CoreChoice("azaharplus", "AzaharPlus", "Opens your installed AzaharPlus.", external = true),
+            CoreChoice("mandarine", "Mandarine", "Opens your installed Mandarine.", external = true),
+            CoreChoice("citra_mmj", "Citra MMJ", "Opens your installed Citra MMJ.", external = true),
+        ),
+        "NINTENDO 3DS", Color(0xFFD03A3A),
+        external = true, uniqueExt = setOf("3ds", "cia", "cxi", "3dsx", "z3dsx", "zcci", "zcxi"),
+    ),
     DC(
         "dc", "Dreamcast", "DC", CartShape.DISC_DC, setOf("gdi", "cdi", "chd", "cue", "m3u"),
         "Sega - Dreamcast",
@@ -155,7 +187,8 @@ enum class GameSystem(
         "Microsoft - Xbox",
         listOf(CoreChoice("hakux", "hakuX", "Opens your installed hakuX.", external = true)),
         "XBOX", Color(0xFF3A8A3A),
-        external = true, uniqueExt = setOf("xiso", "cci"),
+        // (.cci is also a 3DS format: an Xbox .cci is found by its folder)
+        external = true, uniqueExt = setOf("xiso"),
     ),
     PS3(
         "ps3", "PlayStation 3", "PS3", CartShape.DISC_PS2, setOf("iso", "pkg"),
@@ -208,6 +241,9 @@ enum class GameSystem(
                 PSX to listOf("psx", "ps1", "psone", "playstation", "playstation1", "sonyplaystation", "sonyps1", "sonypsx"),
                 PS2 to listOf("ps2", "playstation2", "sonyplaystation2", "sonyps2"),
                 PSP to listOf("psp", "playstationportable", "sonypsp", "sonyplaystationportable"),
+                NDS to listOf("nds", "ds", "nintendods", "dsi", "nintendodsi"),
+                N3DS to listOf("3ds", "n3ds", "nintendo3ds", "new3ds"),
+                SWITCH to listOf("switch", "nintendoswitch", "nsw", "ns"),
                 N64 to listOf("n64", "nintendo64", "nintendon64"),
                 GC to listOf("gc", "ngc", "gamecube", "nintendogamecube", "nintendogc"),
                 DC to listOf("dc", "dreamcast", "segadreamcast", "segadc", "sdc"),

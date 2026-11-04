@@ -104,6 +104,7 @@ fun main(args: Array<String>) {
     if (which == "covermatch") coverMatchCheck(out)
     if (which == "launchbox") launchBoxCheck(out)
     if (which == "shapes") shapeShots(out)
+    if (which == "newshapes") newShapes(out)
     if (which == "labelcut") labelCutCheck(out, File(args[2]))
     if (which == "consoles") consoleShots(out)
     if (which == "readme") readmeShots(out)
@@ -416,4 +417,15 @@ fun shapeShots(out: File) {
         val s = Shoot(out, name, 1280, 960) { SlotRoot(st) }
         s.ms(900); s.snap(); s.close()
     }
+}
+
+/** The redrawn carts and the new card systems side by side (made-up games). */
+fun newShapes(out: File) {
+    val games = listOf(
+        sample(GameSystem.SNES, "Iron Meadow"), sample(GameSystem.NES, "Jade Comet"), sample(GameSystem.N64, "Sky Ferry"),
+        sample(GameSystem.PSP, "Xeno Trails"), sample(GameSystem.NDS, "Lunar Garden"), sample(GameSystem.N3DS, "Moss Kingdom"),
+        sample(GameSystem.SWITCH, "Paper Tigers"),
+    )
+    val s = Shoot(out, "new_shapes", 1500, 560) { CartGallery(games) }
+    s.ms(300); s.snap(); s.close()
 }

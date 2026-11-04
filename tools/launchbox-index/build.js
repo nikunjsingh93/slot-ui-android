@@ -14,6 +14,7 @@ const PLATFORMS = {
   'Nintendo GameCube': 'gc', 'Microsoft Xbox': 'xbox', 'Microsoft Xbox 360': 'x360', 'Sony Playstation 3': 'ps3',
   // carts: photos of the front of the cartridge (the app cuts the label out of them)
   'Nintendo 64': 'n64', 'Super Nintendo Entertainment System': 'snes', 'Nintendo Entertainment System': 'nes',
+  'Nintendo DS': 'nds', 'Nintendo 3DS': 'n3ds', 'Nintendo Switch': 'switch',
 };
 // LaunchBox regions -> the No-Intro / Redump style tags the app's name matcher understands
 const REGION = {
@@ -23,7 +24,7 @@ const REGION = {
   'Asia': 'Asia', 'Brazil': 'Brazil', 'China': 'China',
 };
 // which image type each system uses
-const TYPE = { n64: 'Cart - Front', snes: 'Cart - Front', nes: 'Cart - Front' };
+const TYPE = { n64: 'Cart - Front', snes: 'Cart - Front', nes: 'Cart - Front', nds: 'Cart - Front', n3ds: 'Cart - Front', switch: 'Cart - Front' };
 const unxml = s => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
 
 const [src, outDir] = process.argv.slice(2);

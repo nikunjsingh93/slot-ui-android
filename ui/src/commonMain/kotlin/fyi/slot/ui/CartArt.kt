@@ -90,7 +90,12 @@ fun fitText(
             constraints = Constraints(maxWidth = w.toInt().coerceAtLeast(1)), density = Unit1,
         )
         last = r
-        if (r.size.height <= h && !r.hasVisualOverflow && !r.didOverflowHeight) return r
+        // a word broken across lines ("Come / t") doesn't count as fitting: shrink until whole words fit
+        val split = (0 until r.lineCount - 1).any { i ->
+            val end = r.getLineEnd(i)
+            end in 1 until text.length && text[end - 1].isLetterOrDigit() && text[end].isLetterOrDigit()
+        }
+        if (!split && r.size.height <= h && !r.hasVisualOverflow && !r.didOverflowHeight) return r
         px -= 1f
     }
     return last!!
@@ -126,6 +131,7 @@ class CartPainter private constructor(
         }.getOrDefault(false)
     } == true
     private val discScan: Boolean = spec.disc != null && clearCorners
+    private val wholeScan: Boolean = clearCorners && (game.system.shape in WHOLE_SCAN || game.system == GameSystem.SWITCH)
 
     /**
      * A real N64 / SNES / NES label cut out of a photo of the cartridge (it comes with rounded, transparent corners):
@@ -149,6 +155,17 @@ class CartPainter private constructor(
 
     /** Paints the cart face with its top-left at the current origin, in design units. */
     fun DrawScope.paint(alpha: Float = 1f) {
+        if (wholeScan && cover != null) {
+            // the scan is the cart: fitted inside it, standing on its bottom edge
+            val s = min(spec.w / cover.width, spec.h / cover.height)
+            val w = cover.width * s
+            val h = cover.height * s
+            drawImage(
+                cover, dstOffset = IntOffset(((spec.w - w) / 2f).toInt(), (spec.h - h).toInt()),
+                dstSize = IntSize(w.toInt(), h.toInt()), alpha = alpha,
+            )
+            return
+        }
         spec.disc?.let { paintDisc(it, alpha); return }
         paintShadow(alpha)
         val o = spec.outline
@@ -417,10 +434,13 @@ class CartPainter private constructor(
 
     companion object {
         /** Per cart shape, the area a real label is fitted into (design units), roughly where it sits on the real cart. */
+        private val NO_LETTERING = setOf(CartShape.N64, CartShape.SNES, CartShape.NES)
+        /** Cards and UMDs whose scan (from LaunchBox, on a clear background) shows the whole thing: it is drawn as the cart. */
+        private val WHOLE_SCAN = setOf(CartShape.UMD, CartShape.NDS, CartShape.N3DS)
         private val REAL_LABEL_AREA = mapOf(
             CartShape.N64 to Rect(64f, 10f, 176f, 154f),
-            CartShape.SNES to Rect(20f, 18f, 220f, 114f),
-            CartShape.NES to Rect(30f, 44f, 210f, 206f),
+            CartShape.SNES to Rect(24f, 6f, 216f, 70f),
+            CartShape.NES to Rect(100f, 6f, 222f, 192f),
         )
         fun create(assets: CartAssets, game: Game, cover: ImageBitmap?): CartPainter {
             val spec = CartSpecs.of(game)
@@ -447,7 +467,8 @@ class CartPainter private constructor(
                 else -> null
             }
             // (a real N64 cart has no lettering on its front)
-            val letterText = if (lettering == null && game.system.shape != CartShape.N64) assets.measurer.measure(
+            // (real N64, SNES and NES carts carry no lettering on the shell, just the label)
+            val letterText = if (lettering == null && game.system.shape !in NO_LETTERING) assets.measurer.measure(
                 if (game.system.shape == CartShape.UMD) "PSP" else game.system.lettering,
                 if (game.system.shape == CartShape.UMD) style.copy(fontSize = 17.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Normal)
                 else if (disc != null) style.copy(fontSize = ((disc.radius - disc.labelRadius) * 0.5f).sp, letterSpacing = 0.5.sp)

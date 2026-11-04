@@ -25,6 +25,19 @@
         <package android:name="org.dolphinemu.mmjr" />
         <package android:name="org.ppsspp.ppsspp" />
         <package android:name="io.recompiled.redream" />
+        <!-- 3DS, DS and Switch emulators -->
+        <package android:name="org.azahar_emu.azahar" />
+        <package android:name="io.github.lime3ds.android" />
+        <package android:name="io.github.azaharplus.android" />
+        <package android:name="io.github.mandarine3ds.mandarine" />
+        <package android:name="org.citra.emu" />
+        <package android:name="me.magnum.melonds" />
+        <package android:name="me.magnum.melonds.nightly" />
+        <package android:name="com.dsemu.drastic" />
+        <package android:name="dev.eden.eden_emulator" />
+        <package android:name="dev.eden.eden_emulator.nightly" />
+        <package android:name="dev.legacy.eden_emulator" />
+        <package android:name="org.kenjinx.android" />
         <!-- every app that has a launcher icon, for Settings > Apps & games -->
         <intent>
             <action android:name="android.intent.action.MAIN" />

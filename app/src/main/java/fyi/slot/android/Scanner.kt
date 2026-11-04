@@ -179,9 +179,11 @@ class Scanner(private val ctx: Context) {
 
         private val SKIP_DIRS = setOf(
             "labels", "media", "bios", "saves", "states", "images", "boxart", "snaps", "thumbnails", "manuals",
+            // Switch folders hold updates, DLC, keys and firmware beside the games
+            "updates", "update", "dlc", "keys", "firmware",
             // systems slot does not emulate: don't waste time opening their (often huge) zip collections
-            "psv", "vita", "wii", "wiiu", "3ds", "nds", "ds",
-            "saturn", "windows", "1windows", "pc", "dos", "scummvm", "switch", "gtav", "arcade", "mame", "fbneo",
+            "psv", "vita", "wii", "wiiu",
+            "saturn", "windows", "1windows", "pc", "dos", "scummvm", "gtav", "arcade", "mame", "fbneo",
         )
 
         fun sha1(s: String): String =

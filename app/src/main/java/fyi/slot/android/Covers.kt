@@ -404,7 +404,7 @@ class Covers(private val ctx: Context) {
         /** Disc scans: LaunchBox's image server, and the per-system lists of its disc scans kept in this repo. */
         private const val LAUNCHBOX_IMAGES = "https://images.launchbox-app.com/"
         private const val DISC_LISTS = "https://raw.githubusercontent.com/nikunjsingh93/slot-ui-android/main/art/launchbox/"
-        private val LAUNCHBOX_SYSTEMS = setOf("psx", "ps2", "psp", "dc", "gc", "xbox", "x360", "ps3")
+        private val LAUNCHBOX_SYSTEMS = setOf("psx", "ps2", "psp", "dc", "gc", "xbox", "x360", "ps3", "nds", "n3ds", "switch")
         private val LAUNCHBOX_CARTS = setOf("n64", "snes", "nes")
         /** PS1 disc scans that LaunchBox lacks: the PSX1G1B1C1D collection on GitHub, and the list of its names kept in this repo. */
         private const val PSX_DISC_IMAGES = "https://raw.githubusercontent.com/UnluckyForSome/PSX1G1B1C1D/main/library/disc/"

@@ -63,12 +63,50 @@ object ExternalLauncher {
         Emulator("ppsspp_app", "org.ppsspp.ppsspp", "PPSSPP") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("org.ppsspp.ppsspp", "org.ppsspp.ppsspp.PpssppActivity")
         },
+        // 3DS, Azahar and the Citra family: the game as the data of an "open" request on its EmulationActivity (with the
+        // document grant), on a fresh task; Azahar's Play Store build still carries Lime3DS's id
+        Emulator("azahar", "org.azahar_emu.azahar", "Azahar") { _, _, uri -> citraLike("org.azahar_emu.azahar", "org.citra.citra_emu.activities.EmulationActivity", uri) },
+        Emulator("azahar", "io.github.lime3ds.android", "Azahar") { _, _, uri -> citraLike("io.github.lime3ds.android", "org.citra.citra_emu.activities.EmulationActivity", uri) },
+        Emulator("azaharplus", "io.github.azaharplus.android", "AzaharPlus") { _, _, uri -> citraLike("io.github.azaharplus.android", "org.citra.citra_emu.activities.EmulationActivity", uri) },
+        Emulator("mandarine", "io.github.mandarine3ds.mandarine", "Mandarine") { _, _, uri -> citraLike("io.github.mandarine3ds.mandarine", "io.github.mandarine3ds.mandarine.activities.EmulationActivity", uri) },
+        // Citra MMJ: the file path in "GamePath"
+        Emulator("citra_mmj", "org.citra.emu", "Citra MMJ") { _, path, _ ->
+            Intent().setClassName("org.citra.emu", "org.citra.emu.ui.EmulationActivity").putExtra("GamePath", path)
+        },
+        // DS, melonDS: its LAUNCH_ROM action with the document in "uri"
+        Emulator("melonds_app", "me.magnum.melonds", "melonDS") { _, _, uri ->
+            Intent("me.magnum.melonds.LAUNCH_ROM").setClassName("me.magnum.melonds", "me.magnum.melonds.ui.emulator.EmulatorActivity")
+                .putExtra("uri", uri.toString()).grant(uri)
+        },
+        Emulator("melonds_app", "me.magnum.melonds.nightly", "melonDS") { _, _, uri ->
+            Intent("me.magnum.melonds.nightly.LAUNCH_ROM").setClassName("me.magnum.melonds.nightly", "me.magnum.melonds.ui.emulator.EmulatorActivity")
+                .putExtra("uri", uri.toString()).grant(uri)
+        },
+        // DraStic: an "open" request with the document, on a fresh task
+        Emulator("drastic", "com.dsemu.drastic", "DraStic") { _, _, uri -> citraLike("com.dsemu.drastic", "com.dsemu.drastic.DraSticActivity", uri) },
+        // Switch, Eden (yuzu's successor): the game as the data of the request yuzu's EmulationActivity listens for
+        Emulator("eden", "dev.eden.eden_emulator", "Eden") { _, _, uri -> eden("dev.eden.eden_emulator", uri) },
+        Emulator("eden", "dev.eden.eden_emulator.nightly", "Eden") { _, _, uri -> eden("dev.eden.eden_emulator.nightly", uri) },
+        Emulator("eden", "dev.legacy.eden_emulator", "Eden") { _, _, uri -> eden("dev.legacy.eden_emulator", uri) },
+        // Kenji-NX: its LAUNCH_GAME action with the document in "bootPath"
+        Emulator("kenjinx", "org.kenjinx.android", "Kenji-NX") { _, _, uri ->
+            Intent("org.kenjinx.android.LAUNCH_GAME").setClassName("org.kenjinx.android", "org.kenjinx.android.MainActivity")
+                .putExtra("bootPath", uri.toString()).grant(uri)
+        },
         // Redream: same, it opens whatever string it is given as a path
         Emulator("redream", "io.recompiled.redream", "Redream") { _, path, uri ->
             Intent(Intent.ACTION_VIEW, Uri.parse(path)).setClassName("io.recompiled.redream", "io.recompiled.redream.MainActivity")
         },
     )
 
+
+    /** An "open this game" request on [activity] with the document granted, replacing whatever that app had open. */
+    private fun citraLike(pkg: String, activity: String, uri: Uri): Intent =
+        Intent(Intent.ACTION_VIEW).setClassName(pkg, activity).grant(uri)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+    private fun eden(pkg: String, uri: Uri): Intent =
+        Intent("android.nfc.action.TECH_DISCOVERED").setClassName(pkg, "org.yuzu.yuzu_emu.activities.EmulationActivity").grant(uri)
 
     private fun xendroid(pkg: String, game: Game, uri: Uri): Intent =
         Intent("xendroid.intent.action.xendroid").setClassName(pkg, "xendroid.compose.EmulatorHostActivity")
