@@ -274,7 +274,7 @@ private data class Rectish(val l: Float, val t: Float, val r: Float, val b: Floa
     fun contains(p: Offset, slack: Float) = p.x in (l - slack)..(r + slack) && p.y in (t - slack)..(b + slack)
 }
 
-private fun layoutFor(sys: GameSystem, m: Metrics): TouchLayout {
+private fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Int> = TOUCH_DEFAULT): TouchLayout {
     val u = m.u
     val w = m.w
     val h = m.h
@@ -317,12 +317,18 @@ private fun layoutFor(sys: GameSystem, m: Metrics): TouchLayout {
         pills += Triple(Pad.R1, Rectish(w - 14 * u - 86 * u, 14 * u, w - 14 * u, 14 * u + 34 * u), "R")
     }
     pills += Triple(Pad.Menu, Rectish(pcx - 28 * u, 12 * u, pcx + 28 * u, 12 * u + 24 * u), "MENU")
-    return TouchLayout(dpadCx, dpadCy, dpadR, btns, pills)
+    val t = if (tweak.size == 6) tweak else TOUCH_DEFAULT
+    val dS = (60 + 10 * t[0]) / 100f
+    val bS = (60 + 10 * t[3]) / 100f
+    fun off(i: Int) = (-20 + 5 * i) / 100f
+    val scaled = btns.map { b -> TouchButtonSpec(b.pad, cx + (b.cx - cx) * bS + off(t[4]) * w, cy + (b.cy - cy) * bS + off(t[5]) * h, b.r * bS, b.label) }
+    return TouchLayout(dpadCx + off(t[1]) * w, dpadCy + off(t[2]) * h, dpadR * dS, scaled, pills)
 }
 
 @Composable
 fun TouchControls(state: SlotState, sys: GameSystem, m: Metrics) {
-    val layout = remember(sys, m) { layoutFor(sys, m) }
+    val tweak = state.settings.touchTweaks[sys.id] ?: TOUCH_DEFAULT
+    val layout = remember(sys, m, tweak) { layoutFor(sys, m, tweak) }
     var pressed by remember { mutableStateOf(emptySet<Pad>()) }
     Box(
         Modifier.fillMaxSize().pointerInput(layout) {

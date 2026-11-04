@@ -39,6 +39,7 @@ object Persist {
                 otherShader = enumOf("otherShader", ShaderChoice.entries.toTypedArray(), d.otherShader),
                 colorCorrection = o.optBoolean("colorCorrection", d.colorCorrection),
                 portraitScreenStep = o.optInt("portraitScreenStep", d.portraitScreenStep).coerceIn(0, 5),
+                touchTweaks = o.optJSONObject("touchTweaks")?.let { m -> m.keys().asSequence().associateWith { k -> m.getJSONArray(k).let { a -> List(a.length()) { a.getInt(it) } } } } ?: d.touchTweaks,
                 gbPalette = o.optString("gbPalette", d.gbPalette).takeIf { it in fyi.slot.ui.GB_PALETTES } ?: d.gbPalette,
                 fastForwardSpeed = o.optInt("fastForwardSpeed", d.fastForwardSpeed),
                 muteFastForward = o.optBoolean("muteFastForward", d.muteFastForward),
@@ -62,7 +63,7 @@ object Persist {
     fun saveSettings(ctx: Context, s: Settings) {
         val o = JSONObject()
             .put("gbaShader", s.gbaShader.name).put("gbShader", s.gbShader.name).put("otherShader", s.otherShader.name)
-            .put("colorCorrection", s.colorCorrection).put("gbPalette", s.gbPalette).put("portraitScreenStep", s.portraitScreenStep)
+            .put("colorCorrection", s.colorCorrection).put("gbPalette", s.gbPalette).put("portraitScreenStep", s.portraitScreenStep).put("touchTweaks", JSONObject(s.touchTweaks.mapValues { JSONArray(it.value) }))
             .put("fastForwardSpeed", s.fastForwardSpeed).put("muteFastForward", s.muteFastForward)
             .put("rewind", s.rewind).put("turbo", s.turbo).put("rumble", s.rumble)
             .put("autoSaveOnEject", s.autoSaveOnEject).put("showTouchControls", s.showTouchControls.name)

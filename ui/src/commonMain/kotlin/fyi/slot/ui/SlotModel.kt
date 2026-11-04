@@ -53,6 +53,8 @@ data class Settings(
     val defaultCores: Map<String, String> = emptyMap(),
     /** Portrait play with on-screen controls: how far the game picture sits below the top edge, 0..5 steps of 3% of the screen height. */
     val portraitScreenStep: Int = 3,
+    /** Per system id: on-screen button tweaks as six indices (d-pad size, x, y, buttons size, x, y); see [TOUCH_DEFAULT]. */
+    val touchTweaks: Map<String, List<Int>> = emptyMap(),
 )
 
 enum class TouchMode(val label: String) { Auto("When no controller"), Always("Always"), Never("Never") }
@@ -98,3 +100,8 @@ interface SlotHost {
 }
 
 enum class Sfx { Insert, Eject, Tick, Select, Back }
+
+/** Index 4 of each list is "no change": sizes 60..140% in 10% steps, offsets -20..+20% of the screen in 5% steps. */
+val TOUCH_DEFAULT = listOf(4, 4, 4, 4, 4, 4)
+val TOUCH_SIZES = (60..140 step 10).map { "$it%" }
+val TOUCH_OFFSETS = (-20..20 step 5).map { if (it > 0) "+$it%" else "$it%" }
