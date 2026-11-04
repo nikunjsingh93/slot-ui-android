@@ -25,6 +25,8 @@ import java.net.URLEncoder
  *     (same idea as slot's custom cart labels),
  *  2. for Game Boy, Color and Advance: a scan of the real label from slot's own art server (art.slot-cfw.fyi,
  *     matched by the ROM's CRC32), or failing that the game's logo on a label of its colour,
+ *     for disc systems: a scan of the real disc from the LaunchBox games database (matched by name; the lists of
+ *     its disc scans are in art/launchbox, built by tools/launchbox-index),
  *  3. the libretro thumbnail server (box art or title screen; the file list of each set is cached and the
  *     ROM name is matched loosely against it, so "Gran Turismo 4.iso" finds "Gran Turismo 4 (USA) (v1.01)"),
  *  4. the cover shown on the game's English Wikipedia page,
@@ -39,53 +41,16 @@ class Covers(private val ctx: Context) {
     private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>()
     private val indexes = java.util.concurrent.ConcurrentHashMap<String, CoverMatch.Index>()
 
-    suspend fun load(game: Game, allowNetwork: Boolean, server: String = ""): ImageBitmap? = withContext(Dispatchers.IO) {
+    suspend fun load(game: Game, allowNetwork: Boolean): ImageBitmap? = withContext(Dispatchers.IO) {
         if (Apps.isApp(game)) return@withContext Apps.icon(ctx, Apps.packageOf(game))
         for (ext in listOf("png", "jpg", "jpeg", "webp")) {
             val f = File(custom, "${game.stem}.$ext")
             if (f.exists()) decode(f)?.let { return@withContext it }
         }
-        // your own art server (Settings > Library > Art server): real disc and cart scans for every system
-        if (server.isNotEmpty()) {
-            // keyed by the server, so art from one server is never taken for another's
-            val tag = Scanner.sha1(server).take(8)
-            val got = File(cache, "${game.id}.srv-$tag.png")
-            if (got.exists()) decode(got)?.let { return@withContext it }
-            val none = File(cache, "${game.id}.srv-$tag.miss")
-            if (allowNetwork && !(none.exists() && System.currentTimeMillis() - none.lastModified() < SERVER_RETRY_MS)) {
-                val bytes = try {
-                    fromServer(server, game, none)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    null
-                }
-                bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }?.let { bmp ->
-                    got.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 95, it) }
-                    return@withContext scaled(bmp).asImageBitmap()
-                }
-            }
-        }
         // Game Boy, Color and Advance: the real label from slot's own art server, matched by the ROM's CRC32
-        if (game.system in SLOT_ART_SYSTEMS) {
-            val real = File(cache, "${game.id}.label.png")
-            if (real.exists()) decode(real)?.let { return@withContext it }
-            val realMiss = File(cache, "${game.id}.label.miss")
-            if (allowNetwork && !(realMiss.exists() && System.currentTimeMillis() - realMiss.lastModified() < RETRY_MS)) {
-                val bmp = try {
-                    gate.withPermit { fromSlotArt(game) }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    null
-                }
-                if (bmp != null) {
-                    real.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 95, it) }
-                    return@withContext scaled(bmp).asImageBitmap()
-                }
-                if (online) realMiss.writeText("x")
-            }
-        }
+        if (game.system in SLOT_ART_SYSTEMS) real(game, "label", allowNetwork) { fromSlotArt(game) }?.let { return@withContext it }
+        // disc systems: a scan of the real disc from the LaunchBox games database, matched by name
+        if (game.system.id in LAUNCHBOX_SYSTEMS) real(game, "disc", allowNetwork) { fromLaunchBox(game) }?.let { return@withContext it }
         val hit = File(cache, "${game.id}.png")
         if (hit.exists()) return@withContext decode(hit)
         val miss = File(cache, "${game.id}.miss")
@@ -106,6 +71,62 @@ class Covers(private val ctx: Context) {
         scaled(bmp).asImageBitmap()
     }
 
+    /**
+     * A scan of the real label or disc from [fetch], cached as `<id>.<kind>.png`. A game it has none for is remembered
+     * (`.miss`) for a week, unless the network was down, and then the usual art is used.
+     */
+    private suspend fun real(game: Game, kind: String, allowNetwork: Boolean, fetch: () -> Bitmap?): ImageBitmap? {
+        val got = File(cache, "${game.id}.$kind.png")
+        if (got.exists()) decode(got)?.let { return it }
+        val none = File(cache, "${game.id}.$kind.miss")
+        if (!allowNetwork || (none.exists() && System.currentTimeMillis() - none.lastModified() < RETRY_MS)) return null
+        val bmp = try {
+            gate.withPermit { fetch() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+        if (bmp == null) { if (online) none.writeText("x"); return null }
+        got.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 95, it) }
+        return scaled(bmp).asImageBitmap()
+    }
+
+    // --- LaunchBox games database: disc scans ---------------------------------------------------------
+
+    /** Per system: "Game Name (Region)" -> LaunchBox image file, from art/launchbox in this repo (built by tools/launchbox-index). */
+    private val discLists = java.util.concurrent.ConcurrentHashMap<String, Pair<Map<String, String>, CoverMatch.Index>>()
+
+    private fun discList(system: String): Pair<Map<String, String>, CoverMatch.Index>? {
+        discLists[system]?.let { return it }
+        synchronized(locks.getOrPut("lb/$system") { Any() }) {
+            discLists[system]?.let { return it }
+            val f = File(indexDir, "launchbox-$system.json")
+            if (!f.exists() || System.currentTimeMillis() - f.lastModified() > INDEX_MS) {
+                get("$DISC_LISTS$system.json")?.takeIf { it.isNotEmpty() && it[0] == '{'.code.toByte() }?.let { body ->
+                    File(indexDir, "launchbox-$system.part").also { it.writeBytes(body) }.renameTo(f)
+                }
+            }
+            if (!f.exists()) return null
+            val json = JSONObject(f.readText())
+            val map = HashMap<String, String>(json.length() * 2)
+            for (k in json.keys()) map[k] = json.getString(k)
+            return (map to CoverMatch.Index(map.keys.toList())).also { discLists[system] = it }
+        }
+    }
+
+    private fun fromLaunchBox(game: Game): Bitmap? {
+        val (map, index) = discList(game.system.id) ?: return null
+        val name = CoverMatch.best(game.stem, index) ?: return null
+        val bytes = get(LAUNCHBOX_IMAGES + enc(map[name] ?: return null)) ?: return null
+        // the scans are large (up to ~1500 px): decode at about the size the shelf draws them
+        val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+        var sample = 1
+        while (opts.outWidth / (sample * 2) >= MAX_W) sample *= 2
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
+    }
+
     /** Set by the fetches: false after a failure to reach the server at all, so a dead connection isn't cached as "no cover". */
     @Volatile private var online = true
 
@@ -119,41 +140,6 @@ class Covers(private val ctx: Context) {
 
     private fun scaled(b: Bitmap): Bitmap =
         if (b.width <= MAX_W) b else Bitmap.createScaledBitmap(b, MAX_W, (b.height * MAX_W.toFloat() / b.width).toInt().coerceAtLeast(1), true)
-
-    // --- your own art server (tools/art-server) --------------------------------------------------------
-
-    /**
-     * Asks your server for the game's label: `GET <server>/label/<system>/<rom file name>?size=..&crc=..`.
-     * 200 is the image, 404 means the server (and ScreenScraper behind it) has none, which is remembered in [none];
-     * anything else (server down, away from home) is not remembered, so it is asked again next time.
-     */
-    private fun fromServer(server: String, game: Game, none: File): ByteArray? {
-        val name = fileName(game) ?: return null
-        // carts are small enough to checksum, which lets the server match the exact dump; discs go by name
-        val crc = if (game.size in 1..MAX_CRC_BYTES) romCrc(game)?.let { "%08X".format(it) } else null
-        val url = "$server/label/${enc(game.system.id)}/${enc(name)}?size=${game.size}" + (crc?.let { "&crc=$it" } ?: "")
-        return try {
-            (URL(url).openConnection() as HttpURLConnection).run {
-                connectTimeout = 4000; readTimeout = 60000
-                setRequestProperty("User-Agent", AGENT)
-                val code = responseCode
-                when (code) {
-                    200 -> inputStream.use { it.readBytes() }
-                    404 -> { none.writeText("x"); null }
-                    else -> null
-                }.also { disconnect() }
-            }
-        } catch (_: java.io.IOException) {
-            null
-        }
-    }
-
-    /** The ROM's own file name ("Gran Turismo 4 (USA).iso"), from a file path or a folder document id. */
-    private fun fileName(game: Game): String? {
-        val uri = android.net.Uri.parse(game.uri)
-        val last = (if (uri.scheme == "file") uri.path else uri.lastPathSegment) ?: return null
-        return last.substringAfterLast('/').substringAfterLast(':').takeIf { it.isNotEmpty() }
-    }
 
     // --- slot's art server (art.slot-cfw.fyi) --------------------------------------------------------
 
@@ -361,9 +347,10 @@ class Covers(private val ctx: Context) {
         private const val SLOT_ART = "https://art.slot-cfw.fyi/"
         private val SLOT_ART_SYSTEMS = setOf(fyi.slot.ui.GameSystem.GB, fyi.slot.ui.GameSystem.GBC, fyi.slot.ui.GameSystem.GBA)
         private const val SLOT_INDEX_MS = 7L * 24 * 3600 * 1000
-        /** A game your art server had nothing for is asked again after this long (you may have added art since). */
-        private const val SERVER_RETRY_MS = 3L * 24 * 3600 * 1000
-        private const val MAX_CRC_BYTES = 64L * 1024 * 1024
+        /** Disc scans: LaunchBox's image server, and the per-system lists of its disc scans kept in this repo. */
+        private const val LAUNCHBOX_IMAGES = "https://images.launchbox-app.com/"
+        private const val DISC_LISTS = "https://raw.githubusercontent.com/nikunjsingh93/slot-ui-android/main/art/launchbox/"
+        private val LAUNCHBOX_SYSTEMS = setOf("psx", "ps2", "psp", "dc", "gc", "xbox", "x360", "ps3")
         private val NOT_ALNUM = Regex("[^A-Za-z0-9]+")
         private const val RETRY_MS = 7L * 24 * 3600 * 1000
         private const val INDEX_MS = 30L * 24 * 3600 * 1000

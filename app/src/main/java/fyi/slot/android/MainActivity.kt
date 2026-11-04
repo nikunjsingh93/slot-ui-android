@@ -306,7 +306,7 @@ class MainActivity : ComponentActivity(), SlotHost {
             if (state.covers.containsKey(g.id) || !coverJobs.add(g.id)) continue
             lifecycleScope.launch {
                 try {
-                    covers.load(g, state.settings.downloadCovers, state.settings.artServer)?.let { state.covers[g.id] = it }
+                    covers.load(g, state.settings.downloadCovers)?.let { state.covers[g.id] = it }
                 } finally {
                     coverJobs.remove(g.id)
                 }
@@ -399,36 +399,6 @@ class MainActivity : ComponentActivity(), SlotHost {
 
     override val versionName: String
         get() = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull().orEmpty()
-
-    /** Settings > Library > Art server: the address of your own art server (tools/art-server), or nothing to turn it off. */
-    override fun onEditArtServer() {
-        val input = android.widget.EditText(this).apply {
-            setSingleLine()
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
-            hint = "http://192.168.1.10:8787"
-            setText(state.settings.artServer)
-        }
-        fun apply(raw: String) {
-            var url = raw.trim().trimEnd('/')
-            if (url.isNotEmpty() && !url.contains("://")) url = "http://$url"
-            if (url == state.settings.artServer) return
-            state.settings = state.settings.copy(artServer = url)
-            onSettingsChanged(state.settings)
-            // show the server's art in place of what was loaded before
-            state.covers.clear()
-            coverJobs.clear()
-            loadCoversAround()
-            state.toast(if (url.isEmpty()) "Art server off" else "Art server: $url")
-        }
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Art server")
-            .setMessage("Address of your own slot art server (see tools/art-server in the repo). Leave empty to turn it off.")
-            .setView(android.widget.FrameLayout(this).apply { setPadding(48, 8, 48, 0); addView(input) })
-            .setPositiveButton("Save") { _, _ -> apply(input.text.toString()) }
-            .setNeutralButton("Turn off") { _, _ -> apply("") }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
 
     override fun onSettingsChanged(settings: Settings) {
         Persist.saveSettings(this, settings)

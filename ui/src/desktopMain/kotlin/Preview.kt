@@ -102,6 +102,7 @@ fun main(args: Array<String>) {
     if (which == "apps") appShots(out)
     if (which == "folders") folderCheck()
     if (which == "covermatch") coverMatchCheck(out)
+    if (which == "launchbox") launchBoxCheck(out)
     if (which == "consoles") consoleShots(out)
     if (which == "readme") readmeShots(out)
     if (which == "list") listShots(out)
@@ -289,6 +290,30 @@ fun drawerShots(out: File) {
 }
 
 /** Runs the cover matcher against directory listings saved as `<out>/<n>.html` (curl of the libretro Named_Boxarts index). */
+/** Real ROM names against the LaunchBox disc lists in art/launchbox (run from the ui module: ../art/launchbox). */
+fun launchBoxCheck(out: File) {
+    val dir = File("../art/launchbox")
+    val cases = mapOf(
+        "psx" to listOf("Disney's Tarzan (USA) (Rerelease)", "Driver 2 - Back on the Streets (Europe) (Disc 1) (Rev 1)", "Gran Turismo (Europe) (En,Fr,De,Es,It)",
+            "Gran Turismo 2 (Europe) (En,Fr,De,Es,It) (Disc 1) (Arcade Mode)", "Mortal Kombat 4 (Europe)", "Need for Speed II (Europe) (En,Fr,De,Es,It,Sv)",
+            "Need for Speed III - Hot Pursuit (Europe) (EnFrDeEsItSv)", "Porsche Challenge", "Tekken 3", "Toy Story 2 - Buzz Lightyear to the Rescue!",
+            "Hot Wheels - Turbo Racing (USA)", "Road Rash 3D (USA)", "Walt Disney World Quest - Magical Racing Tour (USA)", "Colin McRae Rally 2",
+            "Road & Track Presents - The Need for Speed (USA)", "Moto Racer World Tour (USA)"),
+        "ps2" to listOf("Formula One 06 (Europe, Australia) (En,Fr,De,Es,It,Pt,Fi)", "Gran Turismo 4", "WRC - Rally Evolved (Europe, Australia) (En,Fr,De,Es,It,Pt,No,Fi) (v2.00)"),
+        "dc" to listOf("Crazy Taxi 2 (USA)", "SoulCalibur (USA)", "Virtua Tennis - Sega Professional Tennis (USA)"),
+        "psp" to listOf("Tekken 6", "Virtua Tennis - World Tour (USA)", "Virtua Tennis 3 (USA) (En,Ja,Fr,De,Es,It)"),
+        "x360" to listOf("Forza Horizon (USA) (En,Ja,Fr,De,Es,It,Pt,Zh,Pl,Ru)", "Forza Horizon 2 (USA) (En,Ja,Fr,De,Es,It,Pt,Zh,Pl,Ru)"),
+        "gc" to listOf("Legend of Zelda, The - The Wind Waker (USA)", "Mario Kart - Double Dash!! (USA)", "Super Mario Sunshine (USA)"),
+        "xbox" to listOf("Forza Motorsport (USA, Europe) (Demo)"),
+    )
+    for ((n, stems) in cases) {
+        val names = Regex("\"((?:[^\"\\\\]|\\\\.)*)\":").findAll(File(dir, "$n.json").readText()).map { it.groupValues[1].replace("\\\"", "\"") }.toList()
+        val index = CoverMatch.Index(names)
+        println("$n: ${names.size} names")
+        for (s in stems) println("   $s  ->  ${CoverMatch.best(s, index)}")
+    }
+}
+
 fun coverMatchCheck(out: File) {
     val cases = mapOf(
         "dc" to listOf("Virtua Tennis - Sega Professional Tennis (USA)", "Crazy Taxi 2 (USA)", "SoulCalibur (USA)"),

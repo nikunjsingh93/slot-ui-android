@@ -58,9 +58,8 @@ or box art appear. With your own games the labels show title screens and box art
    `Gran Turismo 4.iso` still finds `Gran Turismo 4 (USA)`), then from the game's Wikipedia page. Put your own
    `<rom name>.png` into `Android/data/fyi.slot.android/files/labels` to override it, or turn the download off in
    **Settings > Library**.
-6. **Real disc prints and cart labels for every system:** run your own [art server](tools/art-server/README.md) (one
-   Python file, e.g. on a home Ubuntu box) with your ScreenScraper account, and enter its address in
-   **Settings > Library > Art server**. It asks ScreenScraper once per game and serves all your devices from its cache.
+6. **Disc systems** (PS1, PS2, PSP, Dreamcast, GameCube, Xbox, Xbox 360, PS3) get a scan of the **real disc** from the
+   free LaunchBox games database, matched by the game's name (no account needed). Discs it doesn't have keep the box art.
 
 **BIOS files** go in `Android/data/fyi.slot.android/files/system`. **gpSP** needs `gba_bios.bin` there (without it slot
 quietly uses mGBA). For **Flycast** (Dreamcast) put `dc_boot.bin` and `dc_flash.bin` in your Dreamcast folder and slot
@@ -252,4 +251,5 @@ Notes for contributors and AI coding agents are in `AGENTS.md` and `.ai/`.
   M64Plus FZ, hakuX, Xendroid+, RetroArch) are separate projects, installed by you.
 * No games, BIOS or firmware are included; you supply your own.
 * Real Game Boy, Game Boy Color and GBA label scans come from slot's art server (art.slot-cfw.fyi) by Brandon Kowalski;
-  other thumbnails come from the libretro thumbnail server and Wikipedia.
+  disc scans come from the LaunchBox Games Database (gamesdb.launchbox-app.com); other thumbnails come from the
+  libretro thumbnail server and Wikipedia.

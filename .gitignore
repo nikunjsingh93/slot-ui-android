@@ -11,7 +11,3 @@ app/src/main/jniLibs/
 local.properties
 .kotlin/
 
-# art server: your login and its downloads stay local
-tools/art-server/config.ini
-tools/art-server/cache/
-tools/art-server/overrides/
