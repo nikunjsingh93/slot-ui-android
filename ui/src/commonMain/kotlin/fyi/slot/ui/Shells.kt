@@ -77,7 +77,8 @@ object Shells {
         CartShape.UMD -> sh(0xe8e9ed)
         CartShape.NDS -> sh(0x3b3c42)
         CartShape.N3DS -> sh(0xe2e3e7)
-        CartShape.APP_CARD -> if (game.system == GameSystem.INSTALLED || game.system == GameSystem.SWITCH) sh(0x25262b) else sh(0xe6e8ee)
+        CartShape.SWITCH -> sh(0x2c2d31)
+        CartShape.APP_CARD -> if (game.system == GameSystem.INSTALLED) sh(0x25262b) else sh(0xe6e8ee)
     }
 
     /** FNV-1a hash of the title -> hue, exactly as cart.rs label_colour does. */

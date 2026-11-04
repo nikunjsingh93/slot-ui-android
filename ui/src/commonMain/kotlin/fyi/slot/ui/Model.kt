@@ -3,7 +3,7 @@ package fyi.slot.ui
 import androidx.compose.ui.graphics.Color
 
 /** Physical cart silhouette family. */
-enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD, N64, DISC_PSX, DISC_PS2, DISC_GC, DISC_DC, UMD, NDS, N3DS, APP_CARD }
+enum class CartShape { GBA, GB, GBC, NES, SNES, GENESIS, CARD, HUCARD, N64, DISC_PSX, DISC_PS2, DISC_GC, DISC_DC, UMD, NDS, N3DS, SWITCH, APP_CARD }
 
 /** [external] cores open an installed emulator app; the others are libretro cores bundled in slot. */
 data class CoreChoice(val id: String, val name: String, val tagline: String, val external: Boolean = false)
@@ -141,7 +141,7 @@ enum class GameSystem(
         external = true, uniqueExt = setOf("cso"),
     ),
     SWITCH(
-        "switch", "Nintendo Switch", "Switch", CartShape.APP_CARD, setOf("nsp", "xci", "nsz", "xcz", "nro"),
+        "switch", "Nintendo Switch", "Switch", CartShape.SWITCH, setOf("nsp", "xci", "nsz", "xcz", "nro"),
         "Nintendo - Nintendo Switch",
         listOf(
             CoreChoice("eden", "Eden", "Opens your installed Eden.", external = true),
@@ -304,8 +304,20 @@ data class Game(
     val external: Boolean get() = core.external
 }
 
+/**
+ * Takes the release clutter off a file name before it is shown or matched: a release number in front ("3DS0016 - "),
+ * a "-decrypted" tail and download-site names ("Switch-xci.com"). Regions and [tags] stay for the matcher.
+ */
+fun tidyStem(stem: String): String = stem
+    .replace(Regex("""^(?:3DS|NDS|NSW|DS)?\d{3,5}\s*-\s+""", RegexOption.IGNORE_CASE), "")
+    .replace(Regex("""[\s_-]*decrypted$""", RegexOption.IGNORE_CASE), "")
+    .replace(Regex("""\s*[A-Za-z0-9][\w-]*\.(?:com|net|org|io|ru|xyz)\b""", RegexOption.IGNORE_CASE), "")
+    .trim()
+
 /** Strip (region) and [tags] and collapse spaces, as slot's cart.rs clean_label does. */
-fun cleanLabel(stem: String): String {
+fun cleanLabel(stem: String): String = cleanLabelRaw(tidyStem(stem))
+
+private fun cleanLabelRaw(stem: String): String {
     val sb = StringBuilder()
     var depth = 0
     for (ch in stem) when (ch) {

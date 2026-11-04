@@ -262,7 +262,12 @@ class CartPainter private constructor(
             cornerRadius = CornerRadius(r + 1.2f), style = Stroke(width = .8f),
         )
         val clip = Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(l, CornerRadius(r))) }
+        // a Switch label: the red "NINTENDO SWITCH" band on top, the game below it
+        val switchCard = game.system.shape == CartShape.SWITCH
+        val full = l
         clipPath(clip) {
+            val l = if (switchCard) Rect(full.left, full.top + SWITCH_BAND, full.right, full.bottom) else full
+            if (switchCard) drawRect(Color.White, full.topLeft, full.size, alpha = alpha)
             if (cover != null) {
                 val sc = max(l.width / cover.width, l.height / cover.height)
                 val sw = (l.width / sc).toInt().coerceAtMost(cover.width)
@@ -276,6 +281,7 @@ class CartPainter private constructor(
             } else {
                 drawGeneratedLabel(l, alpha)
             }
+            if (switchCard) drawRect(Color(0xFFE60012), full.topLeft, Size(full.width, SWITCH_BAND), alpha = alpha)
             // glossy edge + inset shadow on top of everything in the label
             drawRect(
                 Brush.verticalGradient(0f to Color.Black.copy(alpha = .34f), 1f to Color.Transparent, startY = l.top, endY = l.top + 6f),
@@ -435,6 +441,7 @@ class CartPainter private constructor(
     companion object {
         /** Per cart shape, the area a real label is fitted into (design units), roughly where it sits on the real cart. */
         private val NO_LETTERING = setOf(CartShape.N64, CartShape.SNES, CartShape.NES)
+        private const val SWITCH_BAND = 34f
         /** Cards and UMDs whose scan (from LaunchBox, on a clear background) shows the whole thing: it is drawn as the cart. */
         private val WHOLE_SCAN = setOf(CartShape.UMD, CartShape.NDS, CartShape.N3DS)
         private val REAL_LABEL_AREA = mapOf(

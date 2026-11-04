@@ -119,6 +119,9 @@ other way round, flip **Settings > Controls > Swap A/B and X/Y**.
 | Xbox | hakuX | | `.iso`, `.xiso` |
 | PlayStation 3 | ARMSX3 | | `.iso` |
 | Xbox 360 | Xendroid+ | | `.iso`, `.xex`, `.zar` |
+| Nintendo DS | melonDS | DraStic | `.nds`, `.dsi` |
+| Nintendo 3DS | Azahar | AzaharPlus, Mandarine, Citra MMJ | `.3ds`, `.cci`, `.cia`, `.cxi`, `.3dsx` (in a `3DS` folder for `.cci`) |
+| Nintendo Switch | Eden | Kenji-NX | `.nsp`, `.xci`, `.nsz`, `.xcz` (folders like `Updates`, `DLC`, `keys` are skipped) |
 
 - **Choosing:** press **START** on a game to flip it over and pick the emulator just for that game. To change the default
   for a whole system, use **Settings > Emulators**. If the default emulator app is not installed, the next one is used.
@@ -251,7 +254,8 @@ Notes for contributors and AI coding agents are in `AGENTS.md` and `.ai/`.
   Mupen64Plus-Next GPL-2.0, PPSSPP GPL-2.0, Flycast GPL-2.0;
   Snes9x and Genesis Plus GX are free for non-commercial use only, so slot must not be sold).
 * Emulator apps that slot opens (DuckStation, AetherSX2/NetherSX2, ARMSX2, ARMSX3, Dolphin, PPSSPP, Redream,
-  M64Plus FZ, hakuX, Xendroid+, RetroArch) are separate projects, installed by you.
+  M64Plus FZ, hakuX, Xendroid+, melonDS, DraStic, Azahar, Mandarine, Citra MMJ, Eden, Kenji-NX, RetroArch) are separate
+  projects, installed by you.
 * No games, BIOS or firmware are included; you supply your own.
 * Real Game Boy, Game Boy Color and GBA label scans come from slot's art server (art.slot-cfw.fyi) by Brandon Kowalski;
   disc scans come from the LaunchBox Games Database (gamesdb.launchbox-app.com); other thumbnails come from the

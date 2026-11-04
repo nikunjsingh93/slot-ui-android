@@ -108,6 +108,7 @@ object CartSpecs {
         CartShape.UMD -> cache.getOrPut("umd") { umd() }
         CartShape.NDS -> cache.getOrPut("nds") { ndsCard() }
         CartShape.N3DS -> cache.getOrPut("n3ds") { n3dsCard() }
+        CartShape.SWITCH -> cache.getOrPut("switch") { switchCard() }
         CartShape.APP_CARD -> cache.getOrPut("app") { appCard() }
     }
 
@@ -256,6 +257,20 @@ object CartSpecs {
             label = Rect(12f, 34f, 188f, 180f), labelRadius = 5f, rim = 5f,
             relief = listOf(Relief(rectPath(40f, 196f, 120f, 2f), raised = false)),
             pinsTop = .9f, letteringY = 10f,
+        )
+    }
+
+    /**
+     * A Nintendo Switch game card: small and dark, a little tab on the top edge, the label nearly filling the front
+     * (its red "NINTENDO SWITCH" band is drawn by the cart painter) and the arrow under it.
+     */
+    private fun switchCard(): CartSpec {
+        val outline = roundedPoly(pts(0f, 6f, 70f, 6f, 76f, 0f, 104f, 0f, 110f, 6f, 180f, 6f, 180f, 262f, 0f, 262f), 10f)
+        return CartSpec(
+            w = 180f, h = 262f, outline = outline,
+            label = Rect(12f, 20f, 168f, 232f), labelRadius = 7f, rim = 5f,
+            relief = listOf(Relief(Path().apply { moveTo(80f, 240f); lineTo(100f, 240f); lineTo(90f, 252f); close() }, raised = false)),
+            pinsTop = .92f, letteringY = 30f,
         )
     }
 

@@ -123,7 +123,7 @@ class Covers(private val ctx: Context) {
 
     private fun fromLaunchBox(game: Game): Bitmap? {
         val (map, index) = discList(game.system.id) ?: return null
-        val name = CoverMatch.best(game.stem, index) ?: return null
+        val name = CoverMatch.best(fyi.slot.ui.tidyStem(game.stem), index) ?: return null
         val bytes = get(LAUNCHBOX_IMAGES + enc(map[name] ?: return null)) ?: return null
         // the scans are large (up to ~1500 px): decode at about the size the shelf draws them
         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -150,7 +150,7 @@ class Covers(private val ctx: Context) {
                 CoverMatch.Index(List(a.length()) { a.getString(it) }).also { psxDiscs = it }
             }
         }
-        val name = CoverMatch.best(game.stem, index) ?: return null
+        val name = CoverMatch.best(fyi.slot.ui.tidyStem(game.stem), index) ?: return null
         val bytes = get(PSX_DISC_IMAGES + enc(name) + ".png") ?: return null
         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
@@ -305,12 +305,12 @@ class Covers(private val ctx: Context) {
     private fun fromLibretro(game: Game): ByteArray? {
         val dir = game.system.thumbDir
         if (dir.isEmpty()) return null
-        val plain = game.stem.map { if (it in "&*/:`<>?\\|\"") '_' else it }.joinToString("")
+        val plain = fyi.slot.ui.tidyStem(game.stem).map { if (it in "&*/:`<>?\\|\"") '_' else it }.joinToString("")
         // a correctly named ROM is found with one small request, without downloading a set's whole file list
         for (kind in kinds(game).take(2)) get("https://thumbnails.libretro.com/${enc(dir)}/$kind/${enc(plain)}.png")?.let { return it }
         for (kind in kinds(game)) {
             val names = index(dir, kind)
-            val name = CoverMatch.best(game.stem, names)
+            val name = CoverMatch.best(fyi.slot.ui.tidyStem(game.stem), names)
             if (name != null) get("https://thumbnails.libretro.com/${enc(dir)}/$kind/${enc(name)}.png")?.let { return it }
         }
         return null
@@ -336,7 +336,7 @@ class Covers(private val ctx: Context) {
 
     /** The infobox cover of the game's article, found by searching "<title> <system> video game". */
     private fun fromWikipedia(game: Game): ByteArray? {
-        val title = game.stem.replace(Regex("[(\\[][^)\\]]*[)\\]]"), " ").replace(Regex("\\s+"), " ").trim()
+        val title = fyi.slot.ui.tidyStem(game.stem).replace(Regex("[(\\[][^)\\]]*[)\\]]"), " ").replace(Regex("\\s+"), " ").trim()
         if (title.length < 2) return null
         val search = getText(
             "https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=6&format=json&srsearch=" +
