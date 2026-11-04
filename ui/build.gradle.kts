@@ -54,6 +54,6 @@ tasks.register<JavaExec>("renderPreviews") {
     dependsOn(main.compileTaskProvider)
     classpath = files(main.output.allOutputs, main.runtimeDependencyFiles)
     mainClass.set("fyi.slot.ui.preview.PreviewKt")
-    args(providers.gradleProperty("out").getOrElse(layout.buildDirectory.dir("previews").get().asFile.absolutePath), providers.gradleProperty("scene").getOrElse("all"))
+    args(providers.gradleProperty("out").getOrElse(layout.buildDirectory.dir("previews").get().asFile.absolutePath), providers.gradleProperty("scene").getOrElse("all"), providers.gradleProperty("dir").getOrElse(""))
     jvmArgs("-Dskiko.renderApi=SOFTWARE")
 }

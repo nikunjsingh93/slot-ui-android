@@ -111,6 +111,20 @@ class CartPainter private constructor(
     val w get() = spec.w
     val h get() = spec.h
     private val lightShell = shell.color.luminance() > 0.5f
+
+    /**
+     * True when [cover] is a scan of the disc itself (LaunchBox disc scans: a round disc on a transparent square)
+     * rather than box art, so it is drawn whole and centred instead of cropped like a case cover.
+     */
+    private val discScan: Boolean = spec.disc != null && cover?.let { img ->
+        runCatching {
+            val px = IntArray(1)
+            listOf(2 to 2, img.width - 3 to 2, 2 to img.height - 3, img.width - 3 to img.height - 3).all { (x, y) ->
+                img.readPixels(px, x, y, 1, 1)
+                (px[0] ushr 24) < 16
+            }
+        }.getOrDefault(false)
+    } == true
     private val glitter: List<Offset> by lazy {
         var s = 0x2545F491L
         fun next(): Float { s = s * 1103515245L + 12345L; return ((s shr 8) and 0xFFFF).toFloat() / 65535f }
@@ -297,14 +311,16 @@ class CartPainter private constructor(
                 val side = d.labelRadius * 2f
                 val l = Rect(c.x - d.labelRadius, c.y - d.labelRadius, c.x + d.labelRadius, c.y + d.labelRadius)
                 if (cover != null) {
-                    // PlayStation 1 covers carry a spine down the left edge: crop it away
-                    val trim = if (game.system == GameSystem.PSX || game.system == GameSystem.DC) 0.84f else 1f
+                    // PlayStation 1 / Dreamcast covers carry a spine down the left edge: crop it away (not from a disc scan)
+                    val spine = !discScan && (game.system == GameSystem.PSX || game.system == GameSystem.DC)
+                    val trim = if (spine) 0.84f else 1f
                     val srcSide = min(min(cover.width * trim, cover.height * trim), min(cover.width.toFloat(), cover.height.toFloat()))
                     val sw = srcSide.toInt()
                     val sh = srcSide.toInt()
+                    val down = if (discScan) 0.5f else if (game.system == GameSystem.GC) 0.4f else 0.6f
                     drawImage(
                         cover,
-                        srcOffset = IntOffset(if (game.system == GameSystem.PSX || game.system == GameSystem.DC) cover.width - sw else (cover.width - sw) / 2, ((cover.height - sh) * (if (game.system == GameSystem.GC) 0.4f else 0.6f)).toInt()), srcSize = IntSize(sw, sh),
+                        srcOffset = IntOffset(if (spine) cover.width - sw else (cover.width - sw) / 2, ((cover.height - sh) * down).toInt()), srcSize = IntSize(sw, sh),
                         dstOffset = IntOffset(l.left.toInt(), l.top.toInt()), dstSize = IntSize(side.toInt() + 1, side.toInt() + 1),
                         alpha = alpha,
                     )

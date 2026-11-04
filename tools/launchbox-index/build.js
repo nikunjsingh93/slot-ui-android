@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds art/launchbox/<system>.json: for each disc system, "Game Name (Region)" -> LaunchBox image file name of a
+// Builds art/launchbox/<system>.json: for each disc system (and N64 / SNES / NES carts), "Game Name (Region)" -> LaunchBox image file name of a
 // scan of the disc (served from https://images.launchbox-app.com/<file>). Alternate names are included too.
 // The app downloads one small list per system instead of LaunchBox's whole database.
 //
@@ -12,6 +12,8 @@ const readline = require('readline');
 const PLATFORMS = {
   'Sony Playstation': 'psx', 'Sony Playstation 2': 'ps2', 'Sony PSP': 'psp', 'Sega Dreamcast': 'dc',
   'Nintendo GameCube': 'gc', 'Microsoft Xbox': 'xbox', 'Microsoft Xbox 360': 'x360', 'Sony Playstation 3': 'ps3',
+  // carts: photos of the front of the cartridge (the app cuts the label out of them)
+  'Nintendo 64': 'n64', 'Super Nintendo Entertainment System': 'snes', 'Nintendo Entertainment System': 'nes',
 };
 // LaunchBox regions -> the No-Intro / Redump style tags the app's name matcher understands
 const REGION = {
@@ -20,6 +22,8 @@ const REGION = {
   'Spain': 'Europe', 'Australia': 'Europe', 'The Netherlands': 'Europe', 'Sweden': 'Europe', 'Korea': 'Korea',
   'Asia': 'Asia', 'Brazil': 'Brazil', 'China': 'China',
 };
+// which image type each system uses
+const TYPE = { n64: 'Cart - Front', snes: 'Cart - Front', nes: 'Cart - Front' };
 const unxml = s => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
 
 const [src, outDir] = process.argv.slice(2);
@@ -39,9 +43,9 @@ rl.on('line', raw => {
     cur = null; return;
   }
   if (cur && l === '</GameImage>') {
-    if (cur.Type === 'Disc' && cur.FileName) {
+    if ((cur.Type === 'Disc' || cur.Type === 'Cart - Front') && cur.FileName) {
       const a = discs.get(cur.DatabaseID) || [];
-      a.push({ file: cur.FileName, region: REGION[cur.Region] || '' });
+      a.push({ file: cur.FileName, region: REGION[cur.Region] || '', type: cur.Type });
       discs.set(cur.DatabaseID, a);
     }
     cur = null; return;
@@ -56,9 +60,11 @@ rl.on('line', raw => {
 });
 rl.on('close', () => {
   const out = {};
-  for (const [id, list] of discs) {
+  for (const [id, all] of discs) {
     const g = games.get(id);
     if (!g) continue;
+    const list = all.filter(i => i.type === (TYPE[g.system] || 'Disc'));
+    if (!list.length) continue;
     const o = out[g.system] || (out[g.system] = {});
     const names = [g.name, ...(alts.get(id) || [])];
     // one scan per region (the first listed); a scan without a region is used for the bare name

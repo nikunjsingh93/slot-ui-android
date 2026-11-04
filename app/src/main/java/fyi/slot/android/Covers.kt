@@ -26,7 +26,8 @@ import java.net.URLEncoder
  *  2. for Game Boy, Color and Advance: a scan of the real label from slot's own art server (art.slot-cfw.fyi,
  *     matched by the ROM's CRC32), or failing that the game's logo on a label of its colour,
  *     for disc systems: a scan of the real disc from the LaunchBox games database (matched by name; the lists of
- *     its disc scans are in art/launchbox, built by tools/launchbox-index),
+ *     its disc scans are in art/launchbox, built by tools/launchbox-index); N64, SNES and NES: the label cut out of
+ *     a LaunchBox photo of the real cartridge,
  *  3. the libretro thumbnail server (box art or title screen; the file list of each set is cached and the
  *     ROM name is matched loosely against it, so "Gran Turismo 4.iso" finds "Gran Turismo 4 (USA) (v1.01)"),
  *  4. the cover shown on the game's English Wikipedia page,
@@ -51,6 +52,8 @@ class Covers(private val ctx: Context) {
         if (game.system in SLOT_ART_SYSTEMS) real(game, "label", allowNetwork) { fromSlotArt(game) }?.let { return@withContext it }
         // disc systems: a scan of the real disc from the LaunchBox games database, matched by name
         if (game.system.id in LAUNCHBOX_SYSTEMS) real(game, "disc", allowNetwork) { fromLaunchBox(game) }?.let { return@withContext it }
+        // N64, SNES, NES: the label cut out of a LaunchBox photo of the real cartridge
+        if (game.system.id in LAUNCHBOX_CARTS) real(game, "cart", allowNetwork) { fromLaunchBox(game)?.let(::cutLabel) }?.let { return@withContext it }
         val hit = File(cache, "${game.id}.png")
         if (hit.exists()) return@withContext decode(hit)
         val miss = File(cache, "${game.id}.miss")
@@ -125,6 +128,20 @@ class Covers(private val ctx: Context) {
         var sample = 1
         while (opts.outWidth / (sample * 2) >= MAX_W) sample *= 2
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
+    }
+
+    /** Just the printed label of a cartridge photo ([fyi.slot.ui.LabelCut]), or null when no clear label is found. */
+    private fun cutLabel(photo: Bitmap): Bitmap? {
+        val sw = 200
+        val sh = (photo.height * sw / photo.width).coerceAtLeast(1)
+        val small = Bitmap.createScaledBitmap(photo, sw, sh, true)
+        val px = IntArray(sw * sh).also { small.getPixels(it, 0, sw, 0, 0, sw, sh) }
+        val b = fyi.slot.ui.LabelCut.find(px, sw, sh) ?: return null
+        val x = (b.left * photo.width).toInt().coerceIn(0, photo.width - 1)
+        val y = (b.top * photo.height).toInt().coerceIn(0, photo.height - 1)
+        val w = ((b.right - b.left) * photo.width).toInt().coerceIn(1, photo.width - x)
+        val h = ((b.bottom - b.top) * photo.height).toInt().coerceIn(1, photo.height - y)
+        return Bitmap.createBitmap(photo, x, y, w, h)
     }
 
     /** Set by the fetches: false after a failure to reach the server at all, so a dead connection isn't cached as "no cover". */
@@ -351,6 +368,7 @@ class Covers(private val ctx: Context) {
         private const val LAUNCHBOX_IMAGES = "https://images.launchbox-app.com/"
         private const val DISC_LISTS = "https://raw.githubusercontent.com/nikunjsingh93/slot-ui-android/main/art/launchbox/"
         private val LAUNCHBOX_SYSTEMS = setOf("psx", "ps2", "psp", "dc", "gc", "xbox", "x360", "ps3")
+        private val LAUNCHBOX_CARTS = setOf("n64", "snes", "nes")
         private val NOT_ALNUM = Regex("[^A-Za-z0-9]+")
         private const val RETRY_MS = 7L * 24 * 3600 * 1000
         private const val INDEX_MS = 30L * 24 * 3600 * 1000

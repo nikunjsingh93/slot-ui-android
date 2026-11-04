@@ -103,6 +103,7 @@ fun main(args: Array<String>) {
     if (which == "folders") folderCheck()
     if (which == "covermatch") coverMatchCheck(out)
     if (which == "launchbox") launchBoxCheck(out)
+    if (which == "labelcut") labelCutCheck(out, File(args[2]))
     if (which == "consoles") consoleShots(out)
     if (which == "readme") readmeShots(out)
     if (which == "list") listShots(out)
@@ -379,4 +380,28 @@ fun gridShots(out: File) {
         val s = Shoot(out, name, size.first, size.second) { SlotRoot(st) }
         s.ms(900); s.snap(); s.close()
     }
+}
+
+/** LaunchBox cart photos in args[2] (a folder): draws the label LabelCut finds on each, into labelcut.png. */
+fun labelCutCheck(out: File, dir: File) {
+    val files = dir.listFiles()!!.filter { it.isFile }.sortedBy { it.name }
+    val cellW = 360; val cellH = 300; val cols = 4
+    val sheet = java.awt.image.BufferedImage(cols * cellW, ((files.size + cols - 1) / cols) * cellH, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+    val g = sheet.createGraphics()
+    g.color = java.awt.Color(40, 90, 40); g.fillRect(0, 0, sheet.width, sheet.height)
+    for ((i, f) in files.withIndex()) {
+        val img = javax.imageio.ImageIO.read(f) ?: continue
+        val sw = 200; val sh = (img.height * sw / img.width).coerceAtLeast(1)
+        val small = java.awt.image.BufferedImage(sw, sh, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        small.createGraphics().apply { setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR); drawImage(img, 0, 0, sw, sh, null); dispose() }
+        val box = fyi.slot.ui.LabelCut.find(small.getRGB(0, 0, sw, sh, null, 0, sw), sw, sh)
+        val s = minOf((cellW - 10f) / img.width, (cellH - 30f) / img.height)
+        val x = (i % cols) * cellW + 5; val y = (i / cols) * cellH + 25
+        g.drawImage(img, x, y, (img.width * s).toInt(), (img.height * s).toInt(), null)
+        g.color = java.awt.Color.RED; g.stroke = java.awt.BasicStroke(3f)
+        box?.let { b -> g.drawRect(x + (b.left * img.width * s).toInt(), y + (b.top * img.height * s).toInt(), ((b.right - b.left) * img.width * s).toInt(), ((b.bottom - b.top) * img.height * s).toInt()) }
+        g.color = java.awt.Color.WHITE; g.drawString(f.name.take(12) + if (box == null) " (none)" else "", x, y - 6)
+        println("${f.name}: $box")
+    }
+    javax.imageio.ImageIO.write(sheet, "png", File(out, "labelcut.png"))
 }
