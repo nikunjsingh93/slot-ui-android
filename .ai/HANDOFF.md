@@ -20,6 +20,8 @@ emulator); cart size and drawer options; touch scrolling in menus; backup of cho
 
 ## Recently Completed (newest first, all in git history)
 
+- README rewritten to match 0.1.24 (systems table with built-in/external defaults, browsing, playing, saves, settings overview). Keep it in sync when adding features.
+
 - 0.1.24: Settings > Interface > List text size (`Settings.listSize`, `ListSize` scale 0.85-1.4 applied to row height, heading height and fonts in `GameListPanel`).
 
 - 0.1.23: list wraps seamlessly (three copies, middle one shown) instead of jumping from last to first; letter headings above each letter group again (variable row step handled when mapping `scroll` to the list); dark copy of the list clipped to the fixed highlight so names stay readable while passing; scanner skips BIOS files (`Scanner.isBios`: scph*, *bios*, dc_boot/flash/nvmem, mcpx).
