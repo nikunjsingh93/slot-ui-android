@@ -101,8 +101,8 @@ enum class GameSystem(
         "ps2", "PlayStation 2", "PS2", CartShape.DISC_PS2, setOf("iso", "chd", "cso", "zso", "cue", "bin", "gz"),
         "Sony - PlayStation 2",
         listOf(
-            CoreChoice("aethersx2", "AetherSX2", "Opens your installed AetherSX2 / NetherSX2.", external = true),
             CoreChoice("armsx2", "ARMSX2", "Opens your installed ARMSX2.", external = true),
+            CoreChoice("aethersx2", "AetherSX2", "Opens your installed AetherSX2 / NetherSX2.", external = true),
         ),
         "PlayStation 2", Color(0xFF2A4BA0),
         external = true, uniqueExt = setOf("cso", "zso"),

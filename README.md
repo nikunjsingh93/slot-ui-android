@@ -91,7 +91,7 @@ folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`
 | System | Emulator it opens | Notes |
 |---|---|---|
 | PlayStation | DuckStation | `.chd`, `.cue` (the `.bin` next to it is hidden), `.pbp`, `.iso` |
-| PlayStation 2 | AetherSX2 or ARMSX2 | `.iso`, `.chd`, `.cso`, `.cue` |
+| PlayStation 2 | ARMSX2 or AetherSX2 | `.iso`, `.chd`, `.cso`, `.cue` |
 | Nintendo 64 | M64Plus FZ (Pro) | `.z64`, `.n64`, `.v64`, and `.zip` straight from the folder |
 | GameCube | Dolphin, or Dolphin MMJR | `.iso`, `.ciso`, `.gcm`, `.rvz`, `.gcz`, `.wbfs` |
 | PSP | PPSSPP | `.iso`, `.cso`, `.pbp`, `.chd` |
@@ -102,7 +102,7 @@ folder named after the system (`PSX`, `PS2`, `PSP`, `N64`, `GC`/`GameCube`, `DC`
 
 PSP games are UMDs (a rounded caddy with the disc inside). Press START on a game to flip the disc and pick the emulator when there is more than one. When you quit the emulator
 and come back to slot, the disc pops back out of the slot. Cover art for discs is cropped from the libretro box art.
-PS2 games open in AetherSX2 (or NetherSX2) by default. To change that for every game, use **Settings > Emulators**, which lists each system that has more than one emulator or core (GBA, GB, GBC, PlayStation 2, GameCube) and lets you pick the default. Press START on a single disc or cart to pick one just for that game.
+PS2 games open in ARMSX2 by default (it now runs better on Mali chips too); if ARMSX2 is not installed, AetherSX2 / NetherSX2 is used. To change that for every game, use **Settings > Emulators**, which lists each system that has more than one emulator or core (GBA, GB, GBC, PlayStation 2, GameCube) and lets you pick the default. Press START on a single disc or cart to pick one just for that game.
 
 Folder names are matched loosely, so `DC`, `dc`, `Dreamcast`, `Sega Dreamcast (Games)`, `PS1`, `Sony PlayStation`, `Game Cube`,
 `NGC`, `Nintendo 64`, `Mega Drive`, `Super Nintendo` and so on all work, anywhere in the folder tree you picked.

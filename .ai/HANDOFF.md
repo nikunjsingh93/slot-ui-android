@@ -7,8 +7,8 @@ Agent: Claude Code (Claude Sonnet 5.5)
 
 ## Current State
 
-Version **0.1.15** (`versionCode` 16) is built, pushed (`main` at `8a3bc42`) and
-published as GitHub release `v0.1.15` with `slot-android-0.1.15.apk` attached. Everything the user asked for so far is
+Version **0.1.16** (`versionCode` 17) is built, pushed (`main` at `8a3bc42`) and
+published as GitHub release `v0.1.16` with `slot-android-0.1.16.apk` attached. Everything the user asked for so far is
 implemented, tested on the RG476H handheld and pushed. Nothing is half-finished. The working tree was clean before
 these `.ai/` files and `AGENTS.md` / `CLAUDE.md` were added.
 
@@ -19,6 +19,8 @@ cover art with fuzzy matching and a Wikipedia fallback; Settings > Emulators (de
 emulator); cart size and drawer options; touch scrolling in menus; backup of choices in the ROM folder; fixed signing key.
 
 ## Recently Completed (newest first, all in git history)
+
+- 0.1.16: ARMSX2 is the default PS2 emulator on every device (user: better Mali support now); AetherSX2/NetherSX2 second and used automatically when ARMSX2 is missing.
 
 - 0.1.15: Xbox (hakuX, com.rfandango.haku_x LauncherActivity VIEW), PS3 (ARMSX3, com.armsx3 / com.armsx3.play, com.armsx2.BootSplashActivity VIEW), Xbox 360 (Xendroid+, xendroid.compose.fork, EmulatorHostActivity with game_uri extra) shelves; launch intents read from each project's source, NOT tested (none installed). Flycast: options use the reicast_ prefix; threaded rendering now disabled but still black on Mali-G57 too, emulation runs (GLThread ~27% CPU), so the picture is lost when handed to LibretroDroid (suspected framebuffer format/blit); Redream stays default.
 
