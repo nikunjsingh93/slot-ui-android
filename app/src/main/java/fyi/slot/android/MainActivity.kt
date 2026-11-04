@@ -329,7 +329,7 @@ class MainActivity : ComponentActivity(), SlotHost {
             return
         }
         // bundled cores read disc images and N64 files where they are, which needs "all files access" once
-        if (game.system.external && game.entryName.isEmpty() && !android.os.Environment.isExternalStorageManager()) {
+        if (game.system.external && game.entryName.isEmpty() && android.os.Build.VERSION.SDK_INT >= 30 && !android.os.Environment.isExternalStorageManager()) {
             state.ejected()
             state.toast("Allow \"All files access\" for slot, then pick the game again")
             runCatching {
