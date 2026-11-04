@@ -193,6 +193,9 @@ private fun SlotState.interfacePage(): MenuPage = MenuPage(
         MenuChoice("Cart size", CartSize.entries.map { it.label }, { settings.cartSize.ordinal }) { i ->
             update { it.copy(cartSize = CartSize.entries[i]) }
         },
+        MenuChoice("Shelf view", listOf("Carts", "List + cart"), { if (settings.shelfList) 1 else 0 }) { i ->
+            update { it.copy(shelfList = i == 1) }
+        },
         MenuChoice("App drawer layout", listOf("Grid", "List"), { if (settings.drawerGrid) 0 else 1 }) { i ->
             update { it.copy(drawerGrid = i == 0) }
         },

@@ -47,6 +47,8 @@ data class Settings(
     val downloadCovers: Boolean = true,
     val brightness: Float = 1f,
     val cartSize: CartSize = CartSize.Default,
+    /** Shelf view: false = carts only (slot), true = a list of games beside the cart. */
+    val shelfList: Boolean = false,
     val drawerGrid: Boolean = true,
     val drawerSize: DrawerSize = DrawerSize.Medium,
     /** Settings > Emulators: system id -> the core or emulator used unless a game has its own choice. */

@@ -50,6 +50,8 @@ PlayStation, PS2, N64, GameCube, PSP and Dreamcast run in their own emulators, w
 
 - **In-game saves (battery saves)** are written for you: every few seconds while you play and again when you eject.
   You never have to do anything for the game's own "Save" to stick.
+- **Jump by letter:** on a touchscreen a row of letters sits under the system bar (on a handheld it appears for a few seconds after a swipe). Tap N to jump to the first game starting with N.
+- **Shelf view:** Settings > Interface > Shelf view: **Carts** (slot) or **List + cart**, a scrolling list of games beside the carts stacked top to bottom. Tap a game to select it, tap it again to play; Up / Down move one game.
 - **Edit button layout:** Settings > Controls > Edit button layout (also in the pause menu under Controls). Pick a system and its on-screen buttons appear over the game: drag the d-pad or the A/B buttons to move them, pinch over a group to resize it, **Reset** puts the defaults back and **Done** keeps the layout. Each system keeps its own layout.
 - **Moving saves to another device:** Settings > Saves. **Export all saves** writes one zip of every emulated game's save (the game's own save and the save states) to a place you choose, and **Import saves** reads such a zip back on another device. Saves go to the game with the same system and name, so the same ROMs must be in the library on both devices. For one game, select it on the shelf, then **Download save** (writes a zip) or **Upload save** (reads a zip into the selected game, even if its file is named differently). An existing save is kept as `.srm.bak` before it is replaced. Save states only load in the same version of the same emulator core.
 - **Portrait screen position:** with on-screen controls in portrait the game picture sits a little below the top edge. Change it in the pause menu or Settings > Screen > Screen position (portrait): Top, Down 1 to Down 5 (default Down 3).
@@ -163,6 +165,8 @@ The game runs in its own process (`GameActivity`, `:game`) so a core that crashe
   are taken from <https://github.com/BrandonKowalski/slot>. This port is therefore also GPL-3.0 (see `LICENSE`).
 * Open Sans (OFL) for the lettering, from slot's assets.
 * [LibretroDroid](https://github.com/Swordfish90/LibretroDroid) (GPL-3.0) and the libretro cores, each under its own licence
-  (mGBA MPL-2.0, gpSP GPL-2.0, Gambatte GPL-2.0, FCEUmm GPL-2.0, Beetle PCE Fast GPL-2.0,
-  Snes9x and Genesis Plus GX are non-commercial).
+  (mGBA MPL-2.0, gpSP GPL-2.0, Gambatte GPL-2.0, FCEUmm GPL-2.0, Beetle PCE Fast GPL-2.0, PCSX ReARMed GPL-2.0,
+  Mupen64Plus-Next GPL-2.0, PPSSPP GPL-2.0, Flycast GPL-2.0;
+  Snes9x and Genesis Plus GX are free for non-commercial use only, so slot must not be sold).
+* No games, BIOS or firmware are included; you supply your own.
 * Thumbnails come from the libretro thumbnail server.

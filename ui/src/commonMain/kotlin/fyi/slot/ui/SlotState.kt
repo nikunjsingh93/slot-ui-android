@@ -201,6 +201,29 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         ringStep(d)
     }
 
+    private fun startHold(d: Int) {
+        ringStep(d)
+        heldDir = d; heldDue = clockMs + HOLD_DELAY_MS; heldFired = 0
+    }
+
+    /** First letter used for jumping ('#' for digits and symbols). */
+    fun letterOf(g: Game): Char = g.title.firstOrNull()?.uppercaseChar()?.takeIf { it.isLetter() } ?: '#'
+
+    /** Moves the shelf the short way round to the cart at [index] (a tap in the list or on a letter). */
+    fun selectIndex(index: Int) {
+        val n = shelf.size
+        if (n == 0 || index !in 0 until n || index == selected) return
+        flingVel = 0f
+        val ahead = ringIndex(index - selected, n)
+        ringStep(if (n < 3 || ahead <= n / 2) ahead else ahead - n)
+    }
+
+    /** Jumps to the first game starting with [letter]. */
+    fun jumpToLetter(letter: Char) {
+        val i = shelf.indexOfFirst { letterOf(it) == letter }
+        if (i >= 0) selectIndex(i)
+    }
+
     fun skipLetter(dir: Int) {
         val list = shelf
         val n = list.size
@@ -329,8 +352,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                     ringStep(d)
                     heldDir = d; heldDue = clockMs + HOLD_DELAY_MS; heldFired = 0
                 }
-                Pad.Up -> if (!repeat) skipLetter(-1)
-                Pad.Down -> if (!repeat) skipLetter(+1)
+                Pad.Up -> if (settings.shelfList) { if (!repeat) startHold(-1) } else if (!repeat) skipLetter(-1)
+                Pad.Down -> if (settings.shelfList) { if (!repeat) startHold(+1) } else if (!repeat) skipLetter(+1)
                 Pad.L1 -> if (!repeat) switchSystem(-1)
                 Pad.R1 -> if (!repeat) switchSystem(+1)
                 Pad.Start -> openCorePicker()
@@ -354,7 +377,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     }
 
     fun release(pad: Pad, now: Long = 0L) {
-        if (((pad == Pad.Left || pad == Pad.L2) && heldDir < 0) || ((pad == Pad.Right || pad == Pad.R2) && heldDir > 0)) heldDir = 0
+        if (((pad == Pad.Left || pad == Pad.L2 || (pad == Pad.Up && settings.shelfList)) && heldDir < 0) || ((pad == Pad.Right || pad == Pad.R2 || (pad == Pad.Down && settings.shelfList)) && heldDir > 0)) heldDir = 0
         if (pad == Pad.A && aDown) {
             aDown = false
             aHold = 0f

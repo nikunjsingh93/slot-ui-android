@@ -74,7 +74,10 @@ fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boole
         val m = remember(w, h, state.settings.cartSize) { Metrics(w, h, state.settings.cartSize.factor) }
         CompositionLocalProvider(LocalU provides m.u) {
             val assets = rememberCartAssets()
-            if (!gameProcess) Browser(state, m, assets)
+            if (!gameProcess) {
+                if (state.settings.shelfList && state.shelf.isNotEmpty()) ListShelf(state, m) { m2 -> Browser(state, m2, assets) }
+                else Browser(state, m, assets)
+            }
             if (gameProcess || state.overlay != Overlay.None) Menus(state, m, gameProcess)
             ToastHost(state, m)
         }
@@ -159,13 +162,15 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
     val spec0 = current?.let { CartSpecs.of(it) }
     val pickerOpen = screen is Screen.CorePicker
     val ui = (1f - seat * 4f).coerceIn(0f, 1f)
-    val cwSel = spec0?.let { it.w * m.cartScale(it) } ?: (300f * m.u)
+    val vertical = state.settings.shelfList
+    // a step on the shelf: one cart width across, or (list view) one cart height down
+    val cwSel = spec0?.let { if (vertical) it.h * m.cartScale(it) * VERTICAL_GAP else it.w * m.cartScale(it) } ?: (300f * m.u)
 
     Box(Modifier.fillMaxSize().background(SlotColors.Recess)) {
         Canvas(
             Modifier.fillMaxSize()
                 .draggable(
-                    orientation = Orientation.Horizontal,
+                    orientation = if (vertical) Orientation.Vertical else Orientation.Horizontal,
                     enabled = screen == Screen.Browse && n > 1,
                     state = rememberDraggableState { dx ->
                         state.dragging = true
@@ -189,12 +194,15 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
             val centre = kotlin.math.round(state.scroll).toInt()
             val inSeat = seat > 0f
             // far first, selected last
-            val order = (-4..4).sortedByDescending { abs(it) }
+            // the list view shows only the selected cart beside the list
+            val reach = if (vertical) 2 else 4
+            val order = (-reach..reach).sortedByDescending { abs(it) }
             for (slot in order) {
                 val g = (if (n >= 3) ringGame(state, centre + slot) else shelfGame(state, slot)) ?: continue
                 if (slot == 0 && (inSeat || pickerOpen)) continue
                 val painter = assets.painterFor(g, state.covers[g.id])
-                val pose = shelfPose(m, painter.spec, if (n >= 3) (centre + slot) - state.scroll else rest + slot, recede = seat)
+                val off = if (n >= 3) (centre + slot) - state.scroll else rest + slot
+                val pose = if (vertical) verticalPose(m, painter.spec, off, seat) else shelfPose(m, painter.spec, off, recede = seat)
                 val w = painter.w * pose.scale
                 if (pose.cx + w / 2f < 0f || pose.cx - w / 2f > m.w || pose.alpha <= 0f) continue
                 drawCartPose(painter, pose, 24f * m.u)
@@ -218,6 +226,16 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
         val hudAlpha = if (pickerOpen) 0f else ui
         Box(Modifier.fillMaxSize().alpha(hudAlpha)) {
             TopBar(state, m)
+            // letter tabs: always on touch screens, and for a few seconds after any swipe on a handheld
+            var letterPing by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+            var lettersShown by remember { androidx.compose.runtime.mutableStateOf(false) }
+            LaunchedEffect(state.dragging || state.flingVel != 0f) { if (state.dragging || state.flingVel != 0f) letterPing++ }
+            LaunchedEffect(letterPing) { if (letterPing > 0) { lettersShown = true; delay(3500); lettersShown = false } }
+            if (n > 1 && !state.settings.shelfList && (!state.gamepad || lettersShown)) {
+                Box(Modifier.fillMaxWidth().offset { IntOffset(0, m.topBar.roundToInt()) }.padding(horizontal = 16f.udp()), contentAlignment = Alignment.TopCenter) {
+                    LetterBar(state) { letterPing++ }
+                }
+            }
             BasinTitle(state, m)
             EmptyNote(state, m)
             Footer(state, m)
@@ -249,7 +267,7 @@ private fun hitCart(state: SlotState, m: Metrics, at: Offset): Int? {
     for (slot in -3..3) {
         val g = shelfGame(state, slot) ?: continue
         val spec = CartSpecs.of(g)
-        val p = shelfPose(m, spec, rest + slot)
+        val p = if (state.settings.shelfList) verticalPose(m, spec, rest + slot, 0f) else shelfPose(m, spec, rest + slot)
         val w = spec.w * p.scale
         val h = spec.h * p.scale
         if (at.x in (p.cx - w / 2)..(p.cx + w / 2) && at.y in (p.footY - h)..p.footY) {
@@ -406,4 +424,17 @@ private fun ringGame(state: SlotState, pos: Int): Game? {
     val n = shelf.size
     if (n == 0) return null
     return shelf[((pos % n) + n) % n]
+}
+
+/** List view: carts stacked top to bottom, one cart height (times this) apart. */
+private const val VERTICAL_GAP = 0.82f
+
+/** Where a cart [offset] places from the selection sits when the shelf runs top to bottom (list view). */
+private fun verticalPose(m: Metrics, spec: CartSpec, offset: Float, recede: Float): CartPose {
+    val s0 = m.cartScale(spec)
+    val t = kotlin.math.min(kotlin.math.abs(offset), 1f)
+    val scale = s0 * (1f + (SIDE_SCALE - 1f) * t)
+    // neighbours stay faint so the selected cart, the title and the slot read clearly
+    val alpha = (1f + (0.32f - 1f) * t) * (1f - recede.coerceIn(0f, 1f))
+    return CartPose(m.cx, m.foot(spec) + offset * spec.h * s0 * VERTICAL_GAP, scale, alpha)
 }

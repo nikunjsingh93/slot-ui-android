@@ -52,6 +52,7 @@ object Persist {
                 swapFaceButtons = o.optBoolean("swapFaceButtons", d.swapFaceButtons),
                 downloadCovers = o.optBoolean("downloadCovers", d.downloadCovers),
                 cartSize = enumOf("cartSize", fyi.slot.ui.CartSize.entries.toTypedArray(), d.cartSize),
+                shelfList = o.optBoolean("shelfList", d.shelfList),
                 drawerGrid = o.optBoolean("drawerGrid", d.drawerGrid),
                 drawerSize = enumOf("drawerSize", fyi.slot.ui.DrawerSize.entries.toTypedArray(), d.drawerSize),
                 brightness = o.optDouble("brightness", d.brightness.toDouble()).toFloat(),
@@ -69,7 +70,7 @@ object Persist {
             .put("autoSaveOnEject", s.autoSaveOnEject).put("showTouchControls", s.showTouchControls.name)
             .put("sounds", s.sounds).put("swapFaceButtons", s.swapFaceButtons)
             .put("downloadCovers", s.downloadCovers).put("brightness", s.brightness.toDouble())
-            .put("cartSize", s.cartSize.name).put("drawerGrid", s.drawerGrid).put("drawerSize", s.drawerSize.name)
+            .put("cartSize", s.cartSize.name).put("drawerGrid", s.drawerGrid).put("drawerSize", s.drawerSize.name).put("shelfList", s.shelfList)
             .put("defaultCores", JSONObject(s.defaultCores))
         writeAtomic(file(ctx, "settings.json"), o.toString())
     }
