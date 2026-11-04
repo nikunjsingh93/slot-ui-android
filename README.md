@@ -83,6 +83,9 @@ to jump to the first game with that letter. It fades out a couple of seconds aft
   the carts, like a slot machine; the list wraps round from the last game to the first, and small letter headings mark
   where each letter starts. **List text size** (Small, Medium, Large, Extra large) is in the same menu.
 
+The interface keeps the same size when the device is turned, and on 8-inch and larger tablets it is automatically drawn
+at a handheld's size instead of being blown up; **Settings > Interface > Interface scale** (60-135%) adjusts it further.
+
 **Cart size** (Extra small to Extra large) is also under **Settings > Interface**. If your handheld reports A/B the
 other way round, flip **Settings > Controls > Swap A/B and X/Y**.
 
@@ -188,7 +191,7 @@ list. D-pad moves, **A** opens, **Y** (or a long press) shows **Open / App info 
 | Gameplay | fast-forward speed and sound, rewind, turbo, rumble, auto-save on eject |
 | Emulators | the default emulator for each system that has more than one |
 | Controls | on-screen controls, edit button layout, swap A/B and X/Y, interface sounds |
-| Interface | cart size, interface scale (60-135%, handy on tablets), menu text size, list text size, shelf view, app drawer layout and size |
+| Interface | cart size, interface scale (60-135%), list text size, shelf view, app drawer layout and size |
 | Button guide, About | the buttons on one page; version and credits |
 | Saves | export / import all saves, download / upload one game's save |
 | Apps & games | show Android apps on the Apps or Installed shelf |

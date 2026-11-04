@@ -65,6 +65,7 @@ fun library(): List<Game> = gbaLib + listOf(
 )
 
 fun main(args: Array<String>) {
+    fyi.slot.ui.autoScaleBigScreens = false
     val out = File(args.firstOrNull() ?: "build/previews").also { it.mkdirs() }
     val which = args.getOrNull(1) ?: "all"
 

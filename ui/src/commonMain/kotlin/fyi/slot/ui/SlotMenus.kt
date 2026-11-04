@@ -196,9 +196,6 @@ private fun SlotState.interfacePage(): MenuPage = MenuPage(
         MenuChoice("Interface scale", UiScale.entries.map { it.label }, { settings.uiScale.ordinal }) { i ->
             update { it.copy(uiScale = UiScale.entries[i]) }
         },
-        MenuChoice("Menu text size", ListSize.entries.map { it.label }, { settings.menuSize.ordinal }) { i ->
-            update { it.copy(menuSize = ListSize.entries[i]) }
-        },
         MenuChoice("List text size", ListSize.entries.map { it.label }, { settings.listSize.ordinal }) { i ->
             update { it.copy(listSize = ListSize.entries[i]) }
         },

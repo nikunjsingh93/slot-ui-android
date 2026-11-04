@@ -66,6 +66,9 @@ suspend fun runFrames(step: (dt: Float) -> Boolean) {
     }
 }
 
+/** Big screens are capped to a handheld's physical size; the desktop preview renderer turns this off. */
+var autoScaleBigScreens = true
+
 /** Root of the slot UI. Draws the shelf, HUD, core picker and menus; transparent while a game runs. */
 @Composable
 fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boolean = false) {
@@ -74,7 +77,10 @@ fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boole
         val h = constraints.maxHeight.toFloat()
         val split = state.settings.shelfList && state.shelf.isNotEmpty()
         val ui = state.settings.uiScale.scale
-        val m = remember(w, h, state.settings.cartSize, split, ui) { Metrics(w, h, state.settings.cartSize.factor, split, ui) }
+        // tablets (600dp or more across the short side) are drawn at the RG476H's physical size instead of filling the screen
+        val dens = androidx.compose.ui.platform.LocalDensity.current.density
+        val maxU = if (autoScaleBigScreens && min(w, h) / dens >= 600f) dens * 1.15f else Float.MAX_VALUE
+        val m = remember(w, h, state.settings.cartSize, split, ui, maxU) { Metrics(w, h, state.settings.cartSize.factor, split, ui, maxU) }
         CompositionLocalProvider(LocalU provides m.u) {
             val assets = rememberCartAssets()
             if (!gameProcess) {

@@ -52,7 +52,6 @@ data class Settings(
     /** List view text size. */
     val listSize: ListSize = ListSize.Medium,
     /** Settings and pause menu text size. */
-    val menuSize: ListSize = ListSize.Medium,
     /** Size of the whole interface. */
     val uiScale: UiScale = UiScale.Default,
     val drawerGrid: Boolean = true,

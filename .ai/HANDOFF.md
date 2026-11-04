@@ -20,7 +20,8 @@ emulator); cart size and drawer options; touch scrolling in menus; backup of cho
 
 ## Recently Completed (newest first, all in git history)
 
-- 0.1.25: menu choices get tappable < > arrows (`stepMenuRow`), Settings > Interface > Interface scale (`UiScale`, multiplies `Metrics.u`) and Menu text size (`menuSize`, LocalU override in `MenuPanel`). Tested on the tablet (70% + Large menus).
+- 0.1.25: menu choices get tappable < > arrows (`stepMenuRow`), Settings > Interface > Interface scale (`UiScale`, multiplies `Metrics.u`). Tested on the tablet.
+- 0.1.26: Menu text size removed (Interface scale covers it). `Metrics.u` is now `min(w,h)/480` in both orientations (same size when rotated) and capped at `density*1.15` px on screens 600dp+ across (tablets drawn at a handheld's physical size); `maxU` comes from SlotRoot, and `autoScaleBigScreens` is false in the desktop previews. Checked on the tablet in portrait and landscape.
 
 - README rewritten to match 0.1.24 (systems table with built-in/external defaults, browsing, playing, saves, settings overview). Keep it in sync when adding features.
 

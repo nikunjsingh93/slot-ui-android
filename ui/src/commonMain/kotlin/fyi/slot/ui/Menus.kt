@@ -96,9 +96,7 @@ private fun MenuScrim(state: SlotState, m: Metrics) {
 
 @Composable
 fun MenuPanel(state: SlotState, m: Metrics, page: MenuPage, cursor: Int) {
-    // Settings > Interface > Menu text size scales the whole panel (text, rows, buttons)
-    val k = state.settings.menuSize.scale
-    CompositionLocalProvider(LocalU provides m.u * k) { MenuPanelBody(state, m, page, cursor, m.u * k) }
+    MenuPanelBody(state, m, page, cursor, m.u)
 }
 
 @Composable
