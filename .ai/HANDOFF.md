@@ -20,6 +20,8 @@ emulator); cart size and drawer options; touch scrolling in menus; backup of cho
 
 ## Recently Completed (newest first, all in git history)
 
+- 0.1.25: menu choices get tappable < > arrows (`stepMenuRow`), Settings > Interface > Interface scale (`UiScale`, multiplies `Metrics.u`) and Menu text size (`menuSize`, LocalU override in `MenuPanel`). Tested on the tablet (70% + Large menus).
+
 - README rewritten to match 0.1.24 (systems table with built-in/external defaults, browsing, playing, saves, settings overview). Keep it in sync when adding features.
 
 - 0.1.24: Settings > Interface > List text size (`Settings.listSize`, `ListSize` scale 0.85-1.4 applied to row height, heading height and fonts in `GameListPanel`).

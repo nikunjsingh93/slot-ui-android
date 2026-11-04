@@ -589,6 +589,15 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         }
     }
 
+    /** A touch on a choice's arrows: one option back ([dir] -1) or forward (+1). */
+    fun stepMenuRow(i: Int, dir: Int) {
+        val page = menuStack.lastOrNull() ?: return
+        if (i in page.items.indices && page.items[i].selectable) {
+            menuCursor[menuCursor.lastIndex] = i
+            activate(dir)
+        }
+    }
+
     fun tapMenuRow(i: Int) {
         val page = menuStack.lastOrNull() ?: return
         if (i in page.items.indices && page.items[i].selectable) {

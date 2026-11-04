@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,9 +96,16 @@ private fun MenuScrim(state: SlotState, m: Metrics) {
 
 @Composable
 fun MenuPanel(state: SlotState, m: Metrics, page: MenuPage, cursor: Int) {
-    val panelW = if (m.portrait) (m.w / m.u - 32f) else 400f
+    // Settings > Interface > Menu text size scales the whole panel (text, rows, buttons)
+    val k = state.settings.menuSize.scale
+    CompositionLocalProvider(LocalU provides m.u * k) { MenuPanelBody(state, m, page, cursor, m.u * k) }
+}
+
+@Composable
+private fun MenuPanelBody(state: SlotState, m: Metrics, page: MenuPage, cursor: Int, u: Float) {
+    val panelW = if (m.portrait) (m.w / u - 32f) else minOf(400f, m.w / u - 32f)
     val rowH = 36f
-    val maxRows = ((m.h / m.u - 150f) / rowH).toInt().coerceIn(4, 9)
+    val maxRows = ((m.h / u - 150f) / rowH).toInt().coerceIn(4, 9)
     val n = page.items.size
     // A native list, so a swipe flings and coasts like the app drawer; the D-pad cursor is kept in view.
     val list = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = (cursor - maxRows / 2).coerceIn(0, (n - maxRows).coerceAtLeast(0)))
@@ -146,7 +154,15 @@ fun MenuPanel(state: SlotState, m: Metrics, page: MenuPage, cursor: Int) {
                         is MenuToggle -> Pill(if (item.get()) "On" else "Off", on = item.get(), selected = sel)
                         is MenuChoice -> {
                             val t = item.options.getOrElse(item.get()) { "" }
-                            SlotText(if (sel) "‹ $t ›".replace("‹", "<").replace("›", ">") else t, 14f, color = if (sel) SlotColors.CapInk else SlotColors.Ink.copy(alpha = .75f), bold = sel)
+                            val c = if (sel) SlotColors.CapInk else SlotColors.Ink.copy(alpha = .75f)
+                            // tappable arrows, so a touch screen can step back as well as forward
+                            Box(Modifier.size(30f.udp()).clip(RoundedCornerShape(15f.udp())).clickable { state.stepMenuRow(idx, -1) }, contentAlignment = Alignment.Center) {
+                                SlotText("<", 15f, color = c.copy(alpha = if (sel) 1f else .6f), bold = true)
+                            }
+                            SlotText(t, 14f, color = c, bold = sel)
+                            Box(Modifier.size(30f.udp()).clip(RoundedCornerShape(15f.udp())).clickable { state.stepMenuRow(idx, +1) }, contentAlignment = Alignment.Center) {
+                                SlotText(">", 15f, color = c.copy(alpha = if (sel) 1f else .6f), bold = true)
+                            }
                         }
                         is MenuSub -> SlotText(">", 16f, color = ink.copy(alpha = .7f), bold = true)
                         is MenuInfo -> SlotText(item.value, 14f, color = SlotColors.Ink.copy(alpha = .6f))

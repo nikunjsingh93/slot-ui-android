@@ -54,6 +54,8 @@ object Persist {
                 cartSize = enumOf("cartSize", fyi.slot.ui.CartSize.entries.toTypedArray(), d.cartSize),
                 shelfList = o.optBoolean("shelfList", d.shelfList),
                 listSize = enumOf("listSize", fyi.slot.ui.ListSize.entries.toTypedArray(), d.listSize),
+                menuSize = enumOf("menuSize", fyi.slot.ui.ListSize.entries.toTypedArray(), d.menuSize),
+                uiScale = enumOf("uiScale", fyi.slot.ui.UiScale.entries.toTypedArray(), d.uiScale),
                 drawerGrid = o.optBoolean("drawerGrid", d.drawerGrid),
                 drawerSize = enumOf("drawerSize", fyi.slot.ui.DrawerSize.entries.toTypedArray(), d.drawerSize),
                 brightness = o.optDouble("brightness", d.brightness.toDouble()).toFloat(),
@@ -71,7 +73,7 @@ object Persist {
             .put("autoSaveOnEject", s.autoSaveOnEject).put("showTouchControls", s.showTouchControls.name)
             .put("sounds", s.sounds).put("swapFaceButtons", s.swapFaceButtons)
             .put("downloadCovers", s.downloadCovers).put("brightness", s.brightness.toDouble())
-            .put("cartSize", s.cartSize.name).put("drawerGrid", s.drawerGrid).put("drawerSize", s.drawerSize.name).put("shelfList", s.shelfList).put("listSize", s.listSize.name)
+            .put("cartSize", s.cartSize.name).put("drawerGrid", s.drawerGrid).put("drawerSize", s.drawerSize.name).put("shelfList", s.shelfList).put("listSize", s.listSize.name).put("menuSize", s.menuSize.name).put("uiScale", s.uiScale.name)
             .put("defaultCores", JSONObject(s.defaultCores))
         writeAtomic(file(ctx, "settings.json"), o.toString())
     }

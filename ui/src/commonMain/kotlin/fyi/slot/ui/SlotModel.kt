@@ -51,6 +51,10 @@ data class Settings(
     val shelfList: Boolean = false,
     /** List view text size. */
     val listSize: ListSize = ListSize.Medium,
+    /** Settings and pause menu text size. */
+    val menuSize: ListSize = ListSize.Medium,
+    /** Size of the whole interface. */
+    val uiScale: UiScale = UiScale.Default,
     val drawerGrid: Boolean = true,
     val drawerSize: DrawerSize = DrawerSize.Medium,
     /** Settings > Emulators: system id -> the core or emulator used unless a game has its own choice. */
@@ -115,3 +119,9 @@ val TOUCH_DEFAULT = listOf(1f, 0f, 0f, 1f, 0f, 0f)
 
 /** List view text size; rows grow with the text so the highlight still fits. */
 enum class ListSize(val label: String, val scale: Float) { Small("Small", 0.85f), Medium("Medium", 1f), Large("Large", 1.2f), XLarge("Extra large", 1.4f) }
+
+/** The whole interface, bigger or smaller (the shelf, the bars, titles and menus); tablets usually want 70-80%. */
+enum class UiScale(val label: String, val scale: Float) {
+    P60("60%", 0.6f), P70("70%", 0.7f), XSmall("80%", 0.8f), Small("90%", 0.9f), Default("100%", 1f),
+    Large("110%", 1.1f), XLarge("120%", 1.2f), XXLarge("135%", 1.35f),
+}

@@ -73,7 +73,8 @@ fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boole
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
         val split = state.settings.shelfList && state.shelf.isNotEmpty()
-        val m = remember(w, h, state.settings.cartSize, split) { Metrics(w, h, state.settings.cartSize.factor, split) }
+        val ui = state.settings.uiScale.scale
+        val m = remember(w, h, state.settings.cartSize, split, ui) { Metrics(w, h, state.settings.cartSize.factor, split, ui) }
         CompositionLocalProvider(LocalU provides m.u) {
             val assets = rememberCartAssets()
             if (!gameProcess) {

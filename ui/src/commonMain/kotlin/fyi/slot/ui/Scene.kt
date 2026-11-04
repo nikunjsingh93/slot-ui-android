@@ -40,9 +40,10 @@ private const val CREEP = 0.03f
 
 /** Screen geometry. [u] is pixels per slot design unit; slot's native canvas is 640x480. */
 /** [split]: list view, where the games list takes the left side and the carts and the slot move to the right. */
-class Metrics(val w: Float, val h: Float, val cartFactor: Float = 1f, val split: Boolean = false) {
+class Metrics(val w: Float, val h: Float, val cartFactor: Float = 1f, val split: Boolean = false, val uiScale: Float = 1f) {
     val portrait = w < h * 1.05f
-    val u: Float = if (portrait) w / 400f else h / 480f
+    /** [uiScale] (Settings > Interface > Interface scale) grows or shrinks everything drawn in design units. */
+    val u: Float = (if (portrait) w / 400f else h / 480f) * uiScale
     val cx = if (split) w * 0.72f else w / 2f
     /** Width the carts have to themselves. */
     val cartsW = if (split) w * 0.5f else w
