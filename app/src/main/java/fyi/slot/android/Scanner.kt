@@ -69,7 +69,7 @@ class Scanner(private val ctx: Context) {
         for (f in files) {
             val ext = f.name.substringAfterLast('.', "").lowercase()
             val s = assigned(sys, ext)
-            if (f.name.startsWith(".")) continue
+            if (f.name.startsWith(".") || isBios(f.name)) continue
             val listed = s != null || ext == "zip" || GameSystem.byExtension(ext) != null || (ext == "bin" && guessBinSystem(name) != null)
             if (!listed || shadowedBin(f.name, cueStems)) continue
             out += Found(DocumentsContract.buildDocumentUriUsingTree(tree, f.id), f.name, f.size, name, s)
@@ -84,7 +84,7 @@ class Scanner(private val ctx: Context) {
         val cueStems = all.filter { it.extension.lowercase() == "cue" }.map { it.nameWithoutExtension.lowercase() }.toSet()
         for (f in all) {
             if (f.isDirectory) { if (!f.name.startsWith(".")) walkLocal(f, depth + 1, out, sys); continue }
-            if (f.name.startsWith(".")) continue
+            if (f.name.startsWith(".") || isBios(f.name)) continue
             val ext = f.extension.lowercase()
             val s = assigned(sys, ext)
             if ((s != null || ext == "zip" || GameSystem.byExtension(ext) != null || (ext == "bin" && guessBinSystem(dir.name) != null)) && !shadowedBin(f.name, cueStems)) {
@@ -169,6 +169,13 @@ class Scanner(private val ctx: Context) {
     }
 
     companion object {
+        /** BIOS and firmware images that sit beside the games (scph5501.bin, dc_boot.bin, gba_bios.bin...) are not games. */
+        private val BIOS_STEM = Regex("""scph[-_ ]?\d+[a-z]?|(.*[-_ (])?bios([-_ ).].*)?|dc_(boot|flash|nvmem)|mcpx.*""", RegexOption.IGNORE_CASE)
+        fun isBios(name: String): Boolean {
+            val ext = name.substringAfterLast('.', "").lowercase()
+            return ext in setOf("bin", "rom", "mec", "nvm", "img") && BIOS_STEM.matches(name.substringBeforeLast('.'))
+        }
+
         private val SKIP_DIRS = setOf(
             "labels", "media", "bios", "saves", "states", "images", "boxart", "snaps", "thumbnails", "manuals",
             // systems slot does not emulate: don't waste time opening their (often huge) zip collections
