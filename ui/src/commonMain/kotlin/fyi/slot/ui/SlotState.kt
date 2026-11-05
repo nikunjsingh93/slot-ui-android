@@ -52,6 +52,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
 
     /** Monotonic counter bumped on every move; lets the shelf play a tick without diffing. */
     var moveTick by mutableIntStateOf(0)
+    /** Counts D-pad Up/Down letter jumps, so the letter bar can show for a moment (not on Left/Right). */
+    var letterJump by mutableIntStateOf(0)
 
     // --- shelf motion (slot's shelf.rs): a ring of carts on a critically damped spring ---------------
     /** Unbounded ring position the spring chases; `selected == target mod n`. */
@@ -311,6 +313,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         val list = shelf
         val n = list.size
         if (n < 2) return
+        letterJump++
         fun key(g: Game) = g.title.firstOrNull()?.uppercaseChar()?.takeIf { it.isLetter() } ?: '#'
         val here = key(list[selected])
         if (list.all { key(it) == here }) return

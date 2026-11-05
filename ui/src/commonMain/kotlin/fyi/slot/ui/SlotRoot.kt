@@ -247,7 +247,11 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
             var letterPing by remember { androidx.compose.runtime.mutableIntStateOf(0) }
             var lettersShown by remember { androidx.compose.runtime.mutableStateOf(false) }
             val moving = state.dragging || state.flingVel != 0f
-            LaunchedEffect(moving, letterPing) {
+            // ...and for a moment after a D-pad Up/Down jump to the next or previous letter (not Left/Right)
+            var seenJump by remember { androidx.compose.runtime.mutableIntStateOf(state.letterJump) }
+            val jumped = state.letterJump != seenJump
+            LaunchedEffect(moving, letterPing, state.letterJump) {
+                if (jumped) { seenJump = state.letterJump; lettersShown = true }
                 if (moving) lettersShown = true else if (lettersShown) { delay(2500); lettersShown = false }
             }
             val lettersAlpha by androidx.compose.animation.core.animateFloatAsState(if (lettersShown) 1f else 0f, tween(if (lettersShown) 120 else 400), label = "letters")
