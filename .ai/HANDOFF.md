@@ -136,3 +136,4 @@ Run in the last session (results as observed):
 - Their Apps & games selection (several installed games) and settings are real user data on the handheld. Do not touch them.
 - Device connection details change; ask the user for the wireless-debugging port if `adb devices` does not show the handheld.
 - 0.1.36: swiping or pressing Right past the last game goes to the next system (first game); Left/swipe back past the first game goes to the previous system (last game). Holding the D-pad stops at the ends. Touch swipes no longer wrap round the shelf.
+- 0.1.37: controller back to wrapping round the shelf as before; only touch swipes go past the ends to the next/previous system.

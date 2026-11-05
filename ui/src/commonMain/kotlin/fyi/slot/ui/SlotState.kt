@@ -74,8 +74,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         clockMs += dt * 1000f
         if (heldDir != 0 && screen == Screen.Browse && overlay == Overlay.None) {
             if (clockMs >= heldDue) {
-                // holding stops on the first or last game; a fresh press there changes system
-                if (kotlin.math.abs(heldDir) == 1 && atEnd(heldDir)) heldDir = 0 else ringStep(heldDir)
+                ringStep(heldDir)
                 heldDue = clockMs + HOLD_RATES[minOf(heldFired, HOLD_RATES.lastIndex)]
                 heldFired++
             }
@@ -276,22 +275,6 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         ringStep(d)
     }
 
-    /** True when the selection is on the last game going forward ([d] 1) or the first going back ([d] -1). */
-    private fun atEnd(d: Int): Boolean {
-        val n = shelf.size
-        return n > 0 && ((d > 0 && selected == n - 1) || (d < 0 && selected == 0))
-    }
-
-    /**
-     * A single step past the last game goes to the next system (its first game); past the first game, to the previous
-     * system (its last game). Returns true when it did.
-     */
-    private fun pastEnd(d: Int): Boolean {
-        if (!atEnd(d) || systems.size < 2) return false
-        switchSystem(d, firstGame = d > 0)
-        return true
-    }
-
     private fun startHold(d: Int) {
         ringStep(d)
         heldDir = d; heldDue = clockMs + HOLD_DELAY_MS; heldFired = 0
@@ -446,10 +429,10 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                 // Android's own key auto-repeat is ignored: slot times its own (400 ms, then 110/85/65/50 ms).
                 Pad.Left, Pad.Right, Pad.L2, Pad.R2 -> if (!repeat) {
                     val d = if (pad == Pad.Left || pad == Pad.L2) -1 else 1
-                    if (!pastEnd(d)) startHold(d)
+                    startHold(d)
                 }
-                Pad.Up -> if (gridView) { if (!repeat) startHold(-gridCols) } else if (settings.shelfList) { if (!repeat && !pastEnd(-1)) startHold(-1) } else if (!repeat) skipLetter(-1)
-                Pad.Down -> if (gridView) { if (!repeat) startHold(gridCols) } else if (settings.shelfList) { if (!repeat && !pastEnd(1)) startHold(+1) } else if (!repeat) skipLetter(+1)
+                Pad.Up -> if (gridView) { if (!repeat) startHold(-gridCols) } else if (settings.shelfList) { if (!repeat) startHold(-1) } else if (!repeat) skipLetter(-1)
+                Pad.Down -> if (gridView) { if (!repeat) startHold(gridCols) } else if (settings.shelfList) { if (!repeat) startHold(+1) } else if (!repeat) skipLetter(+1)
                 Pad.L1 -> if (!repeat) switchSystem(-1)
                 Pad.R1 -> if (!repeat) switchSystem(+1)
                 Pad.Start -> openCorePicker()
