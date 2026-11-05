@@ -56,7 +56,7 @@ data class Settings(
     /** Size of the whole interface. */
     val uiScale: UiScale = UiScale.Default,
     /** Colours of the shelf, bars and menus (never the carts). */
-    val theme: AppTheme = AppTheme.Gray,
+    val theme: AppTheme = AppTheme.Black,
     val drawerGrid: Boolean = true,
     val drawerSize: DrawerSize = DrawerSize.Medium,
     /** Settings > Emulators: system id -> the core or emulator used unless a game has its own choice. */

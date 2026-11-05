@@ -121,7 +121,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         scroll = selected.toFloat()
         velocity = 0f
         heldDir = 0
-        swipeBounded = false
+        // game 0 now sits at ring position 0 (touch mode, if on, carries on with the new shelf)
+        swipeBase = 0
     }
 
     private fun ringIndex(t: Int, n: Int) = ((t % n) + n) % n
@@ -137,7 +138,6 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
             if (by == 0) return
         }
         if (n < 3 && selected + by !in 0 until n) return
-        swipeBounded = false
         target += by
         selected = ringIndex(target, n)
         moveTick++
@@ -159,7 +159,9 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
     /** The game the swipe started on, and how far the finger has moved in games (before the end resistance). */
     private var swipeStart = -1
     private var swipeRaw = 0f
-    private var swipeBounded = false
+    /** Touch mode: set by a swipe, cleared by a controller button. The shelf then has ends (no wrapping round, nothing drawn past them). */
+    var swipeBounded by mutableStateOf(false)
+        private set
 
     /** A finger moved the shelf by [games] (positive = towards later games). */
     fun dragBy(games: Float) {
@@ -192,14 +194,20 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         swipeStart = -1
         if (n > 0 && start >= 0) {
             val pushed = swipeRaw + cartsPerSecond * 0.12f
-            if (start == n - 1 && pushed > n - 1 + SWITCH_PUSH && systems.size > 1) { swipeBounded = false; switchSystem(1, firstGame = true); return }
-            if (start == 0 && pushed < -SWITCH_PUSH && systems.size > 1) { swipeBounded = false; switchSystem(-1, firstGame = false); return }
+            if (start == n - 1 && pushed > n - 1 + SWITCH_PUSH && systems.size > 1) { switchSystem(1, firstGame = true); return }
+            if (start == 0 && pushed < -SWITCH_PUSH && systems.size > 1) { switchSystem(-1, firstGame = false); return }
             // otherwise come to rest inside the shelf
             val u = (scroll - swipeBase).coerceIn(0f, (n - 1).toFloat())
             scroll = swipeBase + u
         }
         if (n < 3 || kotlin.math.abs(cartsPerSecond) < FLING_STOP) { settleAt(boundedSwipe(scroll + cartsPerSecond * 0.12f)); return }
         flingVel = cartsPerSecond.coerceIn(-FLING_MAX, FLING_MAX)
+    }
+
+    /** In touch mode, ring position [pos] is past the first or last game, so nothing is drawn (or tappable) there. */
+    fun hiddenAt(pos: Int): Boolean {
+        val n = shelf.size
+        return swipeBounded && n >= 3 && (pos - swipeBase) !in 0 until n
     }
 
     /** [position] kept between the first and last game of the swipe's shelf. */
@@ -271,7 +279,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         if (i !in 0 until n || i == selected) return
         var d = ringIndex(i - selected, n)
         if (d > n / 2 && n >= 3) d -= n
-        if (n < 3) d = i - selected
+        // touch mode has ends: go straight there, never round the back
+        if (n < 3 || swipeBounded) d = i - selected
         ringStep(d)
     }
 
@@ -289,7 +298,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         if (n == 0 || index !in 0 until n || index == selected) return
         flingVel = 0f
         val ahead = ringIndex(index - selected, n)
-        ringStep(if (n < 3 || ahead <= n / 2) ahead else ahead - n)
+        ringStep(if (swipeBounded) index - selected else if (n < 3 || ahead <= n / 2) ahead else ahead - n)
     }
 
     /** Jumps to the first game starting with [letter]. */
@@ -417,6 +426,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
             return
         }
         if (overlay != Overlay.None) { overlayPress(pad, repeat); return }
+        // moving with a controller ends touch mode: the shelf goes round in a circle again
+        if (screen == Screen.Browse && pad in SHELF_MOVES) swipeBounded = false
         if (screen == Screen.Playing) {
             if (pad == Pad.Menu && !repeat) {
                 if (now - lastMenuTap in 1..MENU_DOUBLE_TAP_MS) openStates() else openQuickMenu()
@@ -739,6 +750,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         /** Swiping past the first or last game: how much the shelf gives, and how far (in games) to push to change system. */
         const val END_GIVE = 0.35f
         const val SWITCH_PUSH = 0.6f
+        /** Controller buttons that move along the shelf or between systems. */
+        val SHELF_MOVES = setOf(Pad.Left, Pad.Right, Pad.Up, Pad.Down, Pad.L1, Pad.R1, Pad.L2, Pad.R2)
     }
 }
 

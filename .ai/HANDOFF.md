@@ -138,3 +138,4 @@ Run in the last session (results as observed):
 - 0.1.36: swiping or pressing Right past the last game goes to the next system (first game); Left/swipe back past the first game goes to the previous system (last game). Holding the D-pad stops at the ends. Touch swipes no longer wrap round the shelf.
 - 0.1.37: controller back to wrapping round the shelf as before; only touch swipes go past the ends to the next/previous system.
 - 0.1.38: Settings > Interface > Theme: Gray (default), Black (OLED), Dark blue. SlotColors.Housing/Recess/Opening/Edge/DrawerBg follow AppTheme (Theme.kt); carts/discs never use them. Preview scene: themes.
+- 0.1.39: Black (OLED) is the default theme (saved under key appTheme, so the implicit Gray saved by 0.1.38 is ignored). Touch mode (SlotState.swipeBounded, set by a swipe, cleared by controller shelf moves): nothing drawn or tappable past the first/last game (hiddenAt).

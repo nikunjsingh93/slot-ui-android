@@ -20,7 +20,7 @@ enum class AppTheme(
     val label: String,
     val housing: Color, val recess: Color, val opening: Color, val edge: Color, val drawer: Color,
 ) {
-    Gray("Gray", Color(0xFF242429), Color(0xFF1A1A1D), Color(0xFF050508), Color(0xFF4D4D57), Color(0xFF0E0E11)),
+    Gray("Gray (classic)", Color(0xFF242429), Color(0xFF1A1A1D), Color(0xFF050508), Color(0xFF4D4D57), Color(0xFF0E0E11)),
     Black("Black (OLED)", Color(0xFF111113), Color(0xFF000000), Color(0xFF000000), Color(0xFF2E2E34), Color(0xFF000000)),
     Blue("Dark blue", Color(0xFF1B2740), Color(0xFF111A2C), Color(0xFF04070E), Color(0xFF3A4D74), Color(0xFF0A1120)),
 }
@@ -28,7 +28,7 @@ enum class AppTheme(
 /** Palette lifted from slot's default theme (crates/slot-store/src/theme.rs); the dark surfaces follow [theme]. */
 object SlotColors {
     /** Set from the settings by [SlotRoot]; everything drawn with the colours below follows it. */
-    var theme by mutableStateOf(AppTheme.Gray)
+    var theme by mutableStateOf(AppTheme.Black)
     val Housing get() = theme.housing
     val Recess get() = theme.recess
     val Opening get() = theme.opening

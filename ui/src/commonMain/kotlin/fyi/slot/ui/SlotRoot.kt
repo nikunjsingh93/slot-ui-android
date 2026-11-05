@@ -212,7 +212,9 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
             val clipBottom = if (vertical) m.shelfBottom else m.h
             clipRect(0f, clipTop, m.w, clipBottom) {
             for (slot in order) {
-                val g = (if (n >= 3) ringGame(state, centre + slot) else shelfGame(state, slot)) ?: continue
+                // touch mode: nothing past the first or last game (the next swipe changes system)
+                if (n >= 3 && state.hiddenAt(centre + slot)) continue
+                val g =(if (n >= 3) ringGame(state, centre + slot) else shelfGame(state, slot)) ?: continue
                 if (slot == 0 && (inSeat || pickerOpen)) continue
                 val painter = assets.painterFor(g, state.covers[g.id])
                 val off = if (n >= 3) (centre + slot) - state.scroll else rest + slot
@@ -283,6 +285,7 @@ private fun hitCart(state: SlotState, m: Metrics, at: Offset): Int? {
     var best: Int? = null
     var bestD = Float.MAX_VALUE
     for (slot in -3..3) {
+        if (state.hiddenAt(state.target + slot)) continue
         val g = shelfGame(state, slot) ?: continue
         val spec = CartSpecs.of(g)
         val p = if (state.settings.shelfList) verticalPose(m, spec, rest + slot, 0f) else shelfPose(m, spec, rest + slot)
