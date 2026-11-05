@@ -74,7 +74,8 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         clockMs += dt * 1000f
         if (heldDir != 0 && screen == Screen.Browse && overlay == Overlay.None) {
             if (clockMs >= heldDue) {
-                ringStep(heldDir)
+                // holding stops on the first or last game; a fresh press there changes system
+                if (kotlin.math.abs(heldDir) == 1 && atEnd(heldDir)) heldDir = 0 else ringStep(heldDir)
                 heldDue = clockMs + HOLD_RATES[minOf(heldFired, HOLD_RATES.lastIndex)]
                 heldFired++
             }
@@ -84,10 +85,19 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
             // coast with friction, picking carts as they pass the middle, then hand over to the spring
             scroll += flingVel * dt
             flingVel *= kotlin.math.exp(-FLING_FRICTION * dt)
+            // a fling stops at the first or last game instead of wrapping round
+            val kept = boundedSwipe(scroll)
+            val hitEnd = kept != scroll
+            scroll = kept
             followScroll()
-            if (kotlin.math.abs(flingVel) < FLING_STOP) {
+            if (hitEnd) {
+                velocity = 0f
+                target = kotlin.math.round(scroll).toInt()
+                selected = ringIndex(target, shelf.size.coerceAtLeast(1))
+                flingVel = 0f
+            } else if (kotlin.math.abs(flingVel) < FLING_STOP) {
                 velocity = flingVel
-                target = kotlin.math.round(scroll + flingVel / FLING_FRICTION).toInt()
+                target = kotlin.math.round(boundedSwipe(scroll + flingVel / FLING_FRICTION)).toInt()
                 selected = ringIndex(target, shelf.size.coerceAtLeast(1))
                 flingVel = 0f
             }
@@ -112,6 +122,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         scroll = selected.toFloat()
         velocity = 0f
         heldDir = 0
+        swipeBounded = false
     }
 
     private fun ringIndex(t: Int, n: Int) = ((t % n) + n) % n
@@ -127,6 +138,7 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
             if (by == 0) return
         }
         if (n < 3 && selected + by !in 0 until n) return
+        swipeBounded = false
         target += by
         selected = ringIndex(target, n)
         moveTick++
@@ -141,11 +153,61 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         if (i != selected) { selected = i; moveTick++; host.sfx(Sfx.Tick) }
     }
 
+    // A finger moves the shelf from the first game to the last without wrapping round: pushing on past the last game
+    // goes to the next system, pushing back past the first one to the previous system.
+    /** Where game 0 sits on the unbounded ring for the swipe in progress (or the fling after it). */
+    private var swipeBase = 0
+    /** The game the swipe started on, and how far the finger has moved in games (before the end resistance). */
+    private var swipeStart = -1
+    private var swipeRaw = 0f
+    private var swipeBounded = false
+
+    /** A finger moved the shelf by [games] (positive = towards later games). */
+    fun dragBy(games: Float) {
+        val n = shelf.size
+        if (n == 0) return
+        if (!dragging || swipeStart < 0) {
+            flingVel = 0f
+            swipeStart = selected
+            swipeBase = kotlin.math.round(scroll).toInt() - selected
+            swipeRaw = scroll - swipeBase
+            swipeBounded = true
+        }
+        dragging = true
+        swipeRaw += games
+        // past either end the shelf only gives a little, like a rubber band
+        val last = (n - 1).toFloat()
+        val shown = when {
+            swipeRaw < 0f -> maxOf(swipeRaw * END_GIVE, -0.45f)
+            swipeRaw > last -> last + minOf((swipeRaw - last) * END_GIVE, 0.45f)
+            else -> swipeRaw
+        }
+        scroll = swipeBase + shown
+    }
+
     /** A drag ended with [cartsPerSecond]: a slow release settles on the nearest cart, a flick keeps the shelf coasting. */
     fun fling(cartsPerSecond: Float) {
         dragging = false
-        if (shelf.size < 3 || kotlin.math.abs(cartsPerSecond) < FLING_STOP) { settleAt(scroll + cartsPerSecond * 0.12f); return }
+        val n = shelf.size
+        val start = swipeStart
+        swipeStart = -1
+        if (n > 0 && start >= 0) {
+            val pushed = swipeRaw + cartsPerSecond * 0.12f
+            if (start == n - 1 && pushed > n - 1 + SWITCH_PUSH && systems.size > 1) { swipeBounded = false; switchSystem(1, firstGame = true); return }
+            if (start == 0 && pushed < -SWITCH_PUSH && systems.size > 1) { swipeBounded = false; switchSystem(-1, firstGame = false); return }
+            // otherwise come to rest inside the shelf
+            val u = (scroll - swipeBase).coerceIn(0f, (n - 1).toFloat())
+            scroll = swipeBase + u
+        }
+        if (n < 3 || kotlin.math.abs(cartsPerSecond) < FLING_STOP) { settleAt(boundedSwipe(scroll + cartsPerSecond * 0.12f)); return }
         flingVel = cartsPerSecond.coerceIn(-FLING_MAX, FLING_MAX)
+    }
+
+    /** [position] kept between the first and last game of the swipe's shelf. */
+    private fun boundedSwipe(position: Float): Float {
+        val n = shelf.size
+        if (!swipeBounded || n == 0) return position
+        return swipeBase + (position - swipeBase).coerceIn(0f, (n - 1).toFloat())
     }
 
     /** Called when a drag ends: settle on the nearest cart. */
@@ -214,6 +276,22 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         ringStep(d)
     }
 
+    /** True when the selection is on the last game going forward ([d] 1) or the first going back ([d] -1). */
+    private fun atEnd(d: Int): Boolean {
+        val n = shelf.size
+        return n > 0 && ((d > 0 && selected == n - 1) || (d < 0 && selected == 0))
+    }
+
+    /**
+     * A single step past the last game goes to the next system (its first game); past the first game, to the previous
+     * system (its last game). Returns true when it did.
+     */
+    private fun pastEnd(d: Int): Boolean {
+        if (!atEnd(d) || systems.size < 2) return false
+        switchSystem(d, firstGame = d > 0)
+        return true
+    }
+
     private fun startHold(d: Int) {
         ringStep(d)
         heldDir = d; heldDue = clockMs + HOLD_DELAY_MS; heldFired = 0
@@ -263,12 +341,18 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         ringStep(if (dir > 0) ahead else ahead - n)
     }
 
-    fun switchSystem(dir: Int) {
+    /** [firstGame] true / false: land on the first / last game (a swipe past the end of the shelf); null: where it was left. */
+    fun switchSystem(dir: Int, firstGame: Boolean? = null) {
         val n = systems.size
         if (n < 2) return
         system?.let { lastIndex[it] = selected }
         systemIndex = ((systemIndex + dir) % n + n) % n
-        selected = (lastIndex[systems[systemIndex]] ?: 0).coerceIn(0, (shelf.size - 1).coerceAtLeast(0))
+        val last = (shelf.size - 1).coerceAtLeast(0)
+        selected = when (firstGame) {
+            true -> 0
+            false -> last
+            null -> (lastIndex[systems[systemIndex]] ?: 0).coerceIn(0, last)
+        }
         snapShelf()
         moveTick++
         host.sfx(Sfx.Select)
@@ -362,11 +446,10 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
                 // Android's own key auto-repeat is ignored: slot times its own (400 ms, then 110/85/65/50 ms).
                 Pad.Left, Pad.Right, Pad.L2, Pad.R2 -> if (!repeat) {
                     val d = if (pad == Pad.Left || pad == Pad.L2) -1 else 1
-                    ringStep(d)
-                    heldDir = d; heldDue = clockMs + HOLD_DELAY_MS; heldFired = 0
+                    if (!pastEnd(d)) startHold(d)
                 }
-                Pad.Up -> if (gridView) { if (!repeat) startHold(-gridCols) } else if (settings.shelfList) { if (!repeat) startHold(-1) } else if (!repeat) skipLetter(-1)
-                Pad.Down -> if (gridView) { if (!repeat) startHold(gridCols) } else if (settings.shelfList) { if (!repeat) startHold(+1) } else if (!repeat) skipLetter(+1)
+                Pad.Up -> if (gridView) { if (!repeat) startHold(-gridCols) } else if (settings.shelfList) { if (!repeat && !pastEnd(-1)) startHold(-1) } else if (!repeat) skipLetter(-1)
+                Pad.Down -> if (gridView) { if (!repeat) startHold(gridCols) } else if (settings.shelfList) { if (!repeat && !pastEnd(1)) startHold(+1) } else if (!repeat) skipLetter(+1)
                 Pad.L1 -> if (!repeat) switchSystem(-1)
                 Pad.R1 -> if (!repeat) switchSystem(+1)
                 Pad.Start -> openCorePicker()
@@ -670,6 +753,9 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         const val FLING_FRICTION = 2.4f
         const val FLING_STOP = 1.6f
         const val FLING_MAX = 45f
+        /** Swiping past the first or last game: how much the shelf gives, and how far (in games) to push to change system. */
+        const val END_GIVE = 0.35f
+        const val SWITCH_PUSH = 0.6f
     }
 }
 

@@ -182,11 +182,8 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
             Modifier.fillMaxSize()
                 .draggable(
                     orientation = if (vertical) Orientation.Vertical else Orientation.Horizontal,
-                    enabled = screen == Screen.Browse && n > 1,
-                    state = rememberDraggableState { dx ->
-                        state.dragging = true
-                        state.scroll -= dx / cwSel
-                    },
+                    enabled = screen == Screen.Browse && n > 0,
+                    state = rememberDraggableState { dx -> state.dragBy(-dx / cwSel) },
                     onDragStarted = { state.flingVel = 0f },
                     onDragStopped = { velocity -> state.fling(-velocity / cwSel) },
                 )

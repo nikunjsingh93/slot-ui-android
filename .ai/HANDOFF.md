@@ -135,3 +135,4 @@ Run in the last session (results as observed):
 - The user wants the latest APK attached to a GitHub release whenever updates are pushed.
 - Their Apps & games selection (several installed games) and settings are real user data on the handheld. Do not touch them.
 - Device connection details change; ask the user for the wireless-debugging port if `adb devices` does not show the handheld.
+- 0.1.36: swiping or pressing Right past the last game goes to the next system (first game); Left/swipe back past the first game goes to the previous system (last game). Holding the D-pad stops at the ends. Touch swipes no longer wrap round the shelf.

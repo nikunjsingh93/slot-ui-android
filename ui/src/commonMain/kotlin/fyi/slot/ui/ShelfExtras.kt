@@ -124,7 +124,7 @@ fun GameListPanel(state: SlotState, m: Metrics) {
             // dragging anywhere on the list moves the shelf itself (same momentum as the carts); the list just follows
             .draggable(
                 orientation = Orientation.Vertical,
-                state = rememberDraggableState { dy -> state.dragging = true; state.scroll -= dy / rowPx },
+                state = rememberDraggableState { dy -> state.dragBy(-dy / rowPx) },
                 onDragStarted = { state.flingVel = 0f },
                 onDragStopped = { v -> state.fling(-v / rowPx) },
             ),
