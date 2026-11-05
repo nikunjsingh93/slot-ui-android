@@ -94,6 +94,16 @@ fun main(args: Array<String>) {
         s.close()
     }
 
+    if (which == "themes") {
+        // each theme: the shelf, then the settings menu over it
+        for (t in fyi.slot.ui.AppTheme.entries) {
+            val state = SlotState().apply { setLibrary(library()); selected = 5; settings = settings.copy(theme = t) }
+            val s = Shoot(out, "theme_" + t.name.lowercase(), 960, 720) { SlotRoot(state) }
+            s.ms(900); s.snap("shelf")
+            state.press(Pad.Select); s.ms(500); s.snap("menu")
+            s.close()
+        }
+    }
     if (which == "all" || which == "menus") menuShots(out)
     if (which == "all" || which == "extra") extraShots(out)
     if (which == "all" || which == "device") deviceShots(out)

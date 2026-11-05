@@ -137,3 +137,4 @@ Run in the last session (results as observed):
 - Device connection details change; ask the user for the wireless-debugging port if `adb devices` does not show the handheld.
 - 0.1.36: swiping or pressing Right past the last game goes to the next system (first game); Left/swipe back past the first game goes to the previous system (last game). Holding the D-pad stops at the ends. Touch swipes no longer wrap round the shelf.
 - 0.1.37: controller back to wrapping round the shelf as before; only touch swipes go past the ends to the next/previous system.
+- 0.1.38: Settings > Interface > Theme: Gray (default), Black (OLED), Dark blue. SlotColors.Housing/Recess/Opening/Edge/DrawerBg follow AppTheme (Theme.kt); carts/discs never use them. Preview scene: themes.

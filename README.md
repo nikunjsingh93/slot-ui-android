@@ -210,7 +210,7 @@ list. D-pad moves, **A** opens, **Y** (or a long press) shows **Open / App info 
 | Gameplay | fast-forward speed and sound, rewind, turbo, rumble, auto-save on eject |
 | Emulators | the default emulator for each system that has more than one |
 | Controls | on-screen controls, edit button layout, swap A/B and X/Y, interface sounds |
-| Interface | cart size, interface scale (60-135%), list text size, shelf view, app drawer layout and size |
+| Interface | theme (Gray, Black (OLED), Dark blue), cart size, interface scale (60-135%), list text size, shelf view, app drawer layout and size |
 | Button guide, About | the buttons on one page; version and credits |
 | Saves | export / import all saves, download / upload one game's save |
 | Apps & games | show Android apps on the Apps or Installed shelf |

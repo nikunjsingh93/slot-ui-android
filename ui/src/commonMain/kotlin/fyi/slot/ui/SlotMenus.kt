@@ -193,6 +193,9 @@ private fun SlotState.appsPage(): MenuPage {
 private fun SlotState.interfacePage(): MenuPage = MenuPage(
     "Interface",
     listOf(
+        MenuChoice("Theme", AppTheme.entries.map { it.label }, { settings.theme.ordinal }) { i ->
+            update { it.copy(theme = AppTheme.entries[i]) }
+        },
         MenuChoice("Cart size", CartSize.entries.map { it.label }, { settings.cartSize.ordinal }) { i ->
             update { it.copy(cartSize = CartSize.entries[i]) }
         },

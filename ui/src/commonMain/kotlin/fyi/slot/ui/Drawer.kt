@@ -54,7 +54,7 @@ fun AppDrawer(state: SlotState, m: Metrics) {
     LaunchedEffect(cols) { state.drawerCols = cols }
 
     Box(
-        Modifier.fillMaxSize().background(Color(0xFF0E0E11))
+        Modifier.fillMaxSize().background(SlotColors.DrawerBg)
             .pointerInput(Unit) { detectTapGestures { } },
     ) {
         Column(Modifier.fillMaxSize().padding(horizontal = 28f.udp(), vertical = 18f.udp())) {

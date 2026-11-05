@@ -72,6 +72,8 @@ var autoScaleBigScreens = true
 /** Root of the slot UI. Draws the shelf, HUD, core picker and menus; transparent while a game runs. */
 @Composable
 fun SlotRoot(state: SlotState, modifier: Modifier = Modifier, gameProcess: Boolean = false) {
+    // the theme is set before anything below reads the colours
+    SlotColors.theme = state.settings.theme
     BoxWithConstraints(modifier.fillMaxSize()) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
