@@ -3,7 +3,7 @@
 set -euo pipefail
 dest="$(dirname "$0")/../app/src/main/jniLibs/arm64-v8a"
 mkdir -p "$dest"
-for core in mgba gpsp gambatte fceumm snes9x genesis_plus_gx mednafen_pce_fast pcsx_rearmed mupen64plus_next_gles3 ppsspp flycast; do
+for core in mgba gpsp gambatte fceumm snes9x genesis_plus_gx mednafen_pce_fast pcsx_rearmed mupen64plus_next_gles3 ppsspp flycast melondsds swanstation; do
   tmp="$(mktemp -d)"
   curl -fsSL "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/${core}_libretro_android.so.zip" -o "$tmp/c.zip"
   unzip -q -o "$tmp/c.zip" -d "$tmp"

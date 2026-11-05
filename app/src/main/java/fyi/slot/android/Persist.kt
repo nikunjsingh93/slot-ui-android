@@ -39,6 +39,9 @@ object Persist {
                 otherShader = enumOf("otherShader", ShaderChoice.entries.toTypedArray(), d.otherShader),
                 colorCorrection = o.optBoolean("colorCorrection", d.colorCorrection),
                 portraitScreenStep = o.optInt("portraitScreenStep", d.portraitScreenStep).coerceIn(0, 5),
+                upscale = o.optInt("upscale", d.upscale).coerceIn(1, 4),
+                pgxp = o.optBoolean("pgxp", d.pgxp),
+                buttonMap = o.optJSONObject("buttonMap")?.let { m -> m.keys().asSequence().associateWith { m.getString(it) } } ?: d.buttonMap,
                 touchTweaks = o.optJSONObject("touchLayout")?.let { m -> m.keys().asSequence().associateWith { k -> m.getJSONArray(k).let { a -> List(a.length()) { a.getDouble(it).toFloat() } } } } ?: d.touchTweaks,
                 gbPalette = o.optString("gbPalette", d.gbPalette).takeIf { it in fyi.slot.ui.GB_PALETTES } ?: d.gbPalette,
                 fastForwardSpeed = o.optInt("fastForwardSpeed", d.fastForwardSpeed),
@@ -67,7 +70,7 @@ object Persist {
     fun saveSettings(ctx: Context, s: Settings) {
         val o = JSONObject()
             .put("gbaShader", s.gbaShader.name).put("gbShader", s.gbShader.name).put("otherShader", s.otherShader.name)
-            .put("colorCorrection", s.colorCorrection).put("gbPalette", s.gbPalette).put("portraitScreenStep", s.portraitScreenStep).put("touchLayout", JSONObject(s.touchTweaks.mapValues { JSONArray(it.value.map { v -> v.toDouble() }) }))
+            .put("colorCorrection", s.colorCorrection).put("gbPalette", s.gbPalette).put("portraitScreenStep", s.portraitScreenStep).put("upscale", s.upscale).put("pgxp", s.pgxp).put("buttonMap", JSONObject(s.buttonMap)).put("touchLayout", JSONObject(s.touchTweaks.mapValues { JSONArray(it.value.map { v -> v.toDouble() }) }))
             .put("fastForwardSpeed", s.fastForwardSpeed).put("muteFastForward", s.muteFastForward)
             .put("rewind", s.rewind).put("turbo", s.turbo).put("rumble", s.rumble)
             .put("autoSaveOnEject", s.autoSaveOnEject).put("showTouchControls", s.showTouchControls.name)

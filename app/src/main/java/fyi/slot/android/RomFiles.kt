@@ -9,7 +9,7 @@ import java.util.zip.ZipInputStream
 /** Copies a ROM out of the SAF tree (and out of any zip) into a real file the libretro core can open. */
 object RomFiles {
     fun materialize(ctx: Context, game: Game): File {
-        // an N64 game kept in a zip: the core wants the bare ROM, so unpack the first ROM inside it
+        // an N64 or DS game kept in a zip: the core wants the bare ROM, so unpack the first ROM inside it
         val direct = ExternalLauncher.pathOf(game)?.let(::File)?.takeIf { it.canRead() }
         if (game.entryName.isEmpty() && direct != null && direct.extension.equals("zip", true)) {
             val dir = File(ctx.cacheDir, "rom").also { it.mkdirs() }
@@ -18,7 +18,7 @@ object RomFiles {
                 while (true) {
                     val e = z.nextEntry ?: break
                     val ext = e.name.substringAfterLast('.', "").lowercase()
-                    if (!e.isDirectory && ext in setOf("z64", "n64", "v64", "ndd", "bin")) {
+                    if (!e.isDirectory && ext in setOf("z64", "n64", "v64", "ndd", "bin", "nds", "dsi")) {
                         val out = File(dir, "${game.id}.$ext")
                         if (!out.exists() || out.length() == 0L) out.outputStream().use { z.copyTo(it) }
                         return out

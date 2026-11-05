@@ -300,7 +300,7 @@ internal fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Float> = TOUCH_D
     val r = 34f * u
     val btns = mutableListOf<TouchButtonSpec>()
     when (sys.shape) {
-        CartShape.SNES -> {
+        CartShape.SNES, CartShape.NDS -> {
             btns += TouchButtonSpec(Pad.A, cx + 52 * u, cy, r, "A")
             btns += TouchButtonSpec(Pad.B, cx, cy + 50 * u, r, "B")
             btns += TouchButtonSpec(Pad.X, cx, cy - 50 * u, r, "X")
@@ -341,7 +341,7 @@ internal fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Float> = TOUCH_D
     val pcx = w / 2f
     pills += Triple(Pad.Select, Rectish(pcx - pw - 12 * u, py, pcx - 12 * u, py + ph), "SELECT")
     pills += Triple(Pad.Start, Rectish(pcx + 12 * u, py, pcx + pw + 12 * u, py + ph), "START")
-    val shoulder = sys.shape in setOf(CartShape.GBA, CartShape.SNES, CartShape.GENESIS, CartShape.DISC_PSX, CartShape.DISC_PS2, CartShape.DISC_DC, CartShape.UMD, CartShape.N64)
+    val shoulder = sys.shape in setOf(CartShape.GBA, CartShape.SNES, CartShape.NDS, CartShape.GENESIS, CartShape.DISC_PSX, CartShape.DISC_PS2, CartShape.DISC_DC, CartShape.UMD, CartShape.N64)
     if (shoulder) {
         pills += Triple(Pad.L1, Rectish(14 * u, 14 * u, 14 * u + 86 * u, 14 * u + 34 * u), "L")
         pills += Triple(Pad.R1, Rectish(w - 14 * u - 86 * u, 14 * u, w - 14 * u, 14 * u + 34 * u), "R")
@@ -369,12 +369,28 @@ fun TouchControls(state: SlotState, sys: GameSystem, m: Metrics) {
                 var current = emptySet<Pad>()
                 var lastLeft = Offset.Zero
                 var lastRight = Offset.Zero
+                // DS: the one finger that is on the game's touch screen rather than on a button
+                val touchScreen = sys.shape == CartShape.NDS
+                var screenFinger: androidx.compose.ui.input.pointer.PointerId? = null
                 while (true) {
                     val ev = awaitPointerEvent()
                     val now = HashSet<Pad>()
                     var left = Offset.Zero
                     var right = Offset.Zero
+                    if (touchScreen) {
+                        val held = screenFinger?.let { id -> ev.changes.firstOrNull { it.id == id } }
+                        if (held != null) {
+                            if (held.pressed) state.host.onScreenTouch(held.position.x, held.position.y, true)
+                            else { state.host.onScreenTouch(held.position.x, held.position.y, false); screenFinger = null }
+                        } else if (screenFinger == null) {
+                            ev.changes.firstOrNull { it.pressed && !it.previousPressed && hit(layout, it.position).isEmpty() && !onDpad(layout, it.position) }?.let { c ->
+                                screenFinger = c.id
+                                state.host.onScreenTouch(c.position.x, c.position.y, true)
+                            }
+                        }
+                    }
                     for (c in ev.changes) {
+                        if (c.id == screenFinger) { c.consume(); continue }
                         if (c.pressed) {
                             now += hit(layout, c.position)
                             if (layout.analog) {
@@ -412,6 +428,9 @@ fun TouchControls(state: SlotState, sys: GameSystem, m: Metrics) {
         TouchArt(layout, pressed, m, stick)
     }
 }
+
+/** True when [p] is anywhere on the d-pad (including its dead centre, which [hit] reports as nothing). */
+private fun onDpad(l: TouchLayout, p: Offset): Boolean = kotlin.math.hypot(p.x - l.dpadCx, p.y - l.dpadCy) < l.dpadR * 1.35f
 
 private fun hit(l: TouchLayout, p: Offset): Set<Pad> {
     val out = HashSet<Pad>()

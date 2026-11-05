@@ -110,7 +110,7 @@ other way round, flip **Settings > Controls > Swap A/B and X/Y**.
 | Game Boy Advance | mGBA (built in) | gpSP, RetroArch | `.gba` |
 | Game Boy / Color | Gambatte (built in) | mGBA, RetroArch | `.gb`, `.gbc` |
 | NES, SNES, Mega Drive, Master System, Game Gear, PC Engine | built in (FCEUmm, Snes9x, Genesis Plus GX, Beetle PCE Fast) | RetroArch | the usual ROM files, also in `.zip` |
-| PlayStation | PCSX ReARMed (built in) | DuckStation, RetroArch | `.chd`, `.cue` (the `.bin` beside it is hidden), `.pbp`, `.iso` |
+| PlayStation | PCSX ReARMed (built in) | SwanStation (built in: PGXP, upscaling), DuckStation, RetroArch | `.chd`, `.cue` (the `.bin` beside it is hidden), `.pbp`, `.iso` |
 | Nintendo 64 | Mupen64Plus-Next (built in) | M64Plus FZ (Pro), RetroArch | `.z64`, `.n64`, `.v64`, `.zip` |
 | PSP | PPSSPP (built in) | PPSSPP app, RetroArch | `.iso`, `.cso`, `.pbp`, `.chd` |
 | Dreamcast | Redream | Flycast (built in, experimental), RetroArch | `.chd`, `.gdi`, `.cdi`, `.cue` |
@@ -119,7 +119,7 @@ other way round, flip **Settings > Controls > Swap A/B and X/Y**.
 | Xbox | hakuX | | `.iso`, `.xiso` |
 | PlayStation 3 | ARMSX3 | | `.iso` |
 | Xbox 360 | Xendroid+ | | `.iso`, `.xex`, `.zar` |
-| Nintendo DS | melonDS | DraStic | `.nds`, `.dsi` |
+| Nintendo DS | melonDS DS (built in, no BIOS needed, touch screen works) | melonDS, DraStic, RetroArch | `.nds`, `.dsi`, `.zip` |
 | Nintendo 3DS | Azahar | AzaharPlus, Mandarine, Citra MMJ | `.3ds`, `.cci`, `.cia`, `.cxi`, `.3dsx` (in a `3DS` folder for `.cci`) |
 | Nintendo Switch | Eden | Kenji-NX | `.nsp`, `.xci`, `.nsz`, `.xcz` (folders like `Updates`, `DLC`, `keys` are skipped) |
 

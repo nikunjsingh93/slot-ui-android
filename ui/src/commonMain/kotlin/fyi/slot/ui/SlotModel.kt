@@ -61,6 +61,12 @@ data class Settings(
     val defaultCores: Map<String, String> = emptyMap(),
     /** Portrait play with on-screen controls: how far the game picture sits below the top edge, 0..5 steps of 3% of the screen height. */
     val portraitScreenStep: Int = 3,
+    /** Built-in 3D emulators (PS1, N64, PSP, Dreamcast): internal resolution, 1x (native) to 4x. */
+    val upscale: Int = 1,
+    /** PS1: fix the wobbly, warping 3D (PGXP). Runs PS1 games in SwanStation, which has it. */
+    val pgxp: Boolean = false,
+    /** Controls > Remap buttons: physical button (Pad name) -> what it does in games (Pad name). */
+    val buttonMap: Map<String, String> = emptyMap(),
     /** Per system id: on-screen button layout as six numbers: d-pad scale, x, y, buttons scale, x, y (offsets are shares of the screen). */
     val touchTweaks: Map<String, List<Float>> = emptyMap(),
 )
@@ -90,6 +96,8 @@ interface SlotHost {
     fun onChooseCore(game: Game, coreId: String) {}
     fun onSettingsChanged(settings: Settings) {}
     fun onPickLibrary() {}
+    /** DS touch screen: a finger at ([x], [y]) in window pixels that is on none of the on-screen buttons, or [down] false when it lifts. */
+    fun onScreenTouch(x: Float, y: Float, down: Boolean) {}
     fun onRescan() {}
     /** Save transfer (Settings > Saves): zip all saves out, zip saves in, or the same for one game. */
     fun onExportSaves(game: Game?) {}

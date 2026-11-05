@@ -112,6 +112,8 @@ class CartPainter private constructor(
     val lettering: ImageBitmap?,
     val letterText: TextLayoutResult?,
     val cover: ImageBitmap?,
+    /** Switch: the product code printed on the black strip at the foot of the label. */
+    val code: TextLayoutResult? = null,
 ) {
     val w get() = spec.w
     val h get() = spec.h
@@ -266,7 +268,7 @@ class CartPainter private constructor(
         val switchCard = game.system.shape == CartShape.SWITCH
         val full = l
         clipPath(clip) {
-            val l = if (switchCard) Rect(full.left, full.top + SWITCH_BAND, full.right, full.bottom) else full
+            val l = if (switchCard) Rect(full.left, full.top + SWITCH_BAND, full.right, full.bottom - SWITCH_STRIP) else full
             if (switchCard) drawRect(Color.White, full.topLeft, full.size, alpha = alpha)
             if (cover != null) {
                 val sc = max(l.width / cover.width, l.height / cover.height)
@@ -281,7 +283,11 @@ class CartPainter private constructor(
             } else {
                 drawGeneratedLabel(l, alpha)
             }
-            if (switchCard) drawRect(Color(0xFFE60012), full.topLeft, Size(full.width, SWITCH_BAND), alpha = alpha)
+            if (switchCard) {
+                drawRect(Color(0xFFE60012), full.topLeft, Size(full.width, SWITCH_BAND), alpha = alpha)
+                drawRect(Color(0xFF111114), Offset(full.left, full.bottom - SWITCH_STRIP), Size(full.width, SWITCH_STRIP), alpha = alpha)
+                code?.let { t -> drawText(t, topLeft = Offset(full.center.x - t.size.width / 2f, full.bottom - SWITCH_STRIP / 2f - t.size.height / 2f), alpha = alpha) }
+            }
             // glossy edge + inset shadow on top of everything in the label
             drawRect(
                 Brush.verticalGradient(0f to Color.Black.copy(alpha = .34f), 1f to Color.Transparent, startY = l.top, endY = l.top + 6f),
@@ -326,6 +332,20 @@ class CartPainter private constructor(
             )
         }
         // a real label carries its own branding over where the lettering would be
+        if (game.system.shape == CartShape.SWITCH) {
+            // the Switch logo (the two Joy-Con mark) and the name, white on the red band
+            letterText?.let { t ->
+                val icon = 15f
+                val x0 = (spec.w - (icon + 6f + t.size.width)) / 2f
+                val cy = spec.label.top + SWITCH_BAND / 2f
+                drawRoundRect(Color.White, Offset(x0, cy - icon / 2f), Size(icon, icon), CornerRadius(4f), style = Stroke(1.6f), alpha = alpha)
+                drawRoundRect(Color.White, Offset(x0, cy - icon / 2f), Size(icon / 2f, icon), CornerRadius(4f, 4f), alpha = alpha)
+                drawCircle(Color(0xFFE60012), 1.6f, Offset(x0 + icon / 4f, cy - icon / 5f), alpha = alpha)
+                drawCircle(Color.White, 1.6f, Offset(x0 + icon * .75f, cy + icon / 5f), alpha = alpha)
+                drawText(t, Color.White, topLeft = Offset(x0 + icon + 6f, cy - t.size.height / 2f), alpha = alpha)
+            }
+            return
+        }
         letterText?.takeIf { !realLabel }?.let { t ->
             drawText(t, tint.copy(alpha = .9f), topLeft = Offset((spec.w - t.size.width) / 2f, spec.letteringY), alpha = alpha)
         }
@@ -441,7 +461,8 @@ class CartPainter private constructor(
     companion object {
         /** Per cart shape, the area a real label is fitted into (design units), roughly where it sits on the real cart. */
         private val NO_LETTERING = setOf(CartShape.N64, CartShape.SNES, CartShape.NES)
-        private const val SWITCH_BAND = 34f
+        private const val SWITCH_BAND = 38f
+        private const val SWITCH_STRIP = 17f
         /** Cards and UMDs whose scan (from LaunchBox, on a clear background) shows the whole thing: it is drawn as the cart. */
         private val WHOLE_SCAN = setOf(CartShape.UMD, CartShape.NDS, CartShape.N3DS)
         private val REAL_LABEL_AREA = mapOf(
@@ -482,7 +503,12 @@ class CartPainter private constructor(
                 else style.copy(fontSize = (spec.w / 19f).sp, letterSpacing = (spec.w / 110f).sp),
                 density = Unit1,
             ) else null
-            return CartPainter(game, spec, shell, Shells.labelColor(game.title), title, badge, lettering, letterText, cover)
+            // a Switch card prints a product code ("LA-H-AAACA-USA") at the foot of its label
+            val code = if (game.system.shape == CartShape.SWITCH) assets.measurer.measure(
+                "LA-H-" + (game.title.uppercase().filter { it in 'A'..'Z' } + "AAAAA").take(5) + "-USA",
+                style.copy(fontSize = 8.sp, fontWeight = FontWeight.Normal, letterSpacing = 1.sp, color = Color.White), density = Unit1,
+            ) else null
+            return CartPainter(game, spec, shell, Shells.labelColor(game.title), title, badge, lettering, letterText, cover, code)
         }
     }
 }

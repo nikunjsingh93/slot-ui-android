@@ -95,6 +95,7 @@ enum class GameSystem(
         "Sony - PlayStation",
         listOf(
             CoreChoice("pcsx_rearmed", "PCSX ReARMed", "Built in. Fast and light."),
+            CoreChoice("swanstation", "SwanStation", "Built in. PGXP geometry fix and upscaling, heavier."),
             CoreChoice("duckstation", "DuckStation", "Opens your installed DuckStation.", external = true),
         ),
         "PlayStation", Color(0xFF9AA0B8),
@@ -154,6 +155,7 @@ enum class GameSystem(
         "nds", "Nintendo DS", "NDS", CartShape.NDS, setOf("nds", "dsi", "ids", "zip", "7z"),
         "Nintendo - Nintendo DS",
         listOf(
+            CoreChoice("melondsds", "melonDS DS", "Built in."),
             CoreChoice("melonds_app", "melonDS", "Opens your installed melonDS.", external = true),
             CoreChoice("drastic", "DraStic", "Opens your installed DraStic.", external = true),
         ),

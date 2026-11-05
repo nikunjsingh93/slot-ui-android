@@ -28,6 +28,7 @@ private fun SlotState.screenPage(forSystem: GameSystem?): MenuPage {
     }
     items += MenuToggle("Colour correction", { settings.colorCorrection }) { v -> update { it.copy(colorCorrection = v) } }
     items += MenuChoice("Screen position (portrait)", PORTRAIT_POSITIONS, { settings.portraitScreenStep }) { i -> update { it.copy(portraitScreenStep = i) } }
+    items += MenuChoice("Upscaling (PS1, N64, PSP, DC)", listOf("1x", "2x", "3x", "4x"), { settings.upscale - 1 }) { i -> update { it.copy(upscale = i + 1) } }
     if (forSystem == null || forSystem.shape == CartShape.GB || forSystem.shape == CartShape.GBC) {
         items += MenuChoice(
             "Game Boy palette", GB_PALETTES, { GB_PALETTES.indexOf(settings.gbPalette).coerceAtLeast(0) },
@@ -50,6 +51,7 @@ private fun SlotState.gameplayPage(): MenuPage = MenuPage(
         MenuToggle("Turbo buttons", { settings.turbo }) { v -> update { it.copy(turbo = v) } },
         MenuToggle("Rumble", { settings.rumble }) { v -> update { it.copy(rumble = v) } },
         MenuToggle("Auto-save on eject", { settings.autoSaveOnEject }) { v -> update { it.copy(autoSaveOnEject = v) } },
+        MenuToggle("PS1 geometry fix (PGXP)", { settings.pgxp }) { v -> update { it.copy(pgxp = v) } },
     ),
 )
 
@@ -84,6 +86,7 @@ private fun SlotState.controlsPage(): MenuPage = MenuPage(
         },
         MenuToggle("Swap A/B and X/Y", { settings.swapFaceButtons }) { v -> update { it.copy(swapFaceButtons = v) } },
         MenuSub("Edit button layout") { touchPage() },
+        MenuSub("Remap buttons") { remapPage() },
         MenuToggle("Interface sounds", { settings.sounds }) { v -> update { it.copy(sounds = v) } },
     ),
 )
@@ -209,4 +212,20 @@ private fun SlotState.interfacePage(): MenuPage = MenuPage(
             update { it.copy(drawerSize = DrawerSize.entries[i]) }
         },
     ),
+)
+
+/** The buttons a controller can remap, in the order the page lists them. */
+private val REMAPPABLE = listOf(Pad.A, Pad.B, Pad.X, Pad.Y, Pad.L1, Pad.R1, Pad.L2, Pad.R2, Pad.Start, Pad.Select)
+
+/** Settings > Controls > Remap buttons: what each physical button does in games. */
+private fun SlotState.remapPage(): MenuPage = MenuPage(
+    "Remap buttons",
+    REMAPPABLE.map { from ->
+        MenuChoice("${from.name} button", REMAPPABLE.map { it.name }, { REMAPPABLE.indexOfFirst { it.name == (settings.buttonMap[from.name] ?: from.name) }.coerceAtLeast(0) }) { i ->
+            update { s ->
+                val to = REMAPPABLE[i].name
+                s.copy(buttonMap = if (to == from.name) s.buttonMap - from.name else s.buttonMap + (from.name to to))
+            }
+        }
+    } + MenuAction("Reset to default") { update { it.copy(buttonMap = emptyMap()) }; toast("Buttons back to default") },
 )

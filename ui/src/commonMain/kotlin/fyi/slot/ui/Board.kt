@@ -91,7 +91,8 @@ fun CorePicker(state: SlotState, m: Metrics, assets: CartAssets, screen: Screen.
 
     Box(
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = .62f * flip.value.coerceAtMost(1f)))
-            .pointerInput(Unit) { detectTapGestures { /* swallow taps behind the board */ } },
+            // a tap anywhere off the board closes the picker (taps on the board itself are handled by the board)
+            .pointerInput(Unit) { detectTapGestures { if (flip.value > .9f) state.closeCorePicker() } },
     ) {
         val angle = flip.value * 180f
         val density = LocalDensity.current.density
@@ -165,15 +166,27 @@ fun CorePicker(state: SlotState, m: Metrics, assets: CartAssets, screen: Screen.
     }
 }
 
-/** Chip footprints on the board in design units: one row, centred in the lower half. */
+/**
+ * Chip footprints on the board in design units: one row centred in the lower half, or, when they don't all fit across
+ * the board (four 3DS emulators on a small card), as many rows as it takes, a little higher up.
+ */
 fun chipRects(spec: CartSpec, n: Int): List<Rect> {
     val cw = 62f
     val chh = 38f
     val gap = 14f
-    val total = n * cw + (n - 1) * gap
-    val x0 = (spec.w - total) / 2f
-    val y = spec.h * (if (spec.disc != null) .66f else if (spec.h > 200f) .56f else .44f)
-    return List(n) { Rect(x0 + it * (cw + gap), y, x0 + it * (cw + gap) + cw, y + chh) }
+    val avail = spec.w * .80f
+    val perRow = (((avail + gap) / (cw + gap)).toInt()).coerceAtLeast(1)
+    val rows = (n + perRow - 1) / perRow
+    val y0 = if (rows == 1) spec.h * (if (spec.disc != null) .66f else if (spec.h > 200f) .56f else .44f)
+    else spec.h * (if (spec.disc != null) .52f else .36f)
+    return List(n) { i ->
+        val row = i / perRow
+        val inRow = minOf(perRow, n - row * perRow)
+        val total = inRow * cw + (inRow - 1) * gap
+        val x = (spec.w - total) / 2f + (i % perRow) * (cw + gap)
+        val y = y0 + row * (chh + gap)
+        Rect(x, y, x + cw, y + chh)
+    }
 }
 
 private fun DrawScope.drawBoard(

@@ -17,6 +17,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
+import fyi.slot.ui.CartShape
 import fyi.slot.ui.Game
 import fyi.slot.ui.GameAction
 import fyi.slot.ui.GameSystem
@@ -130,9 +132,20 @@ class GameActivity : ComponentActivity(), SlotHost {
             BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
                 val portrait = maxWidth < maxHeight
                 retro?.let { view ->
+                    // DS: the view is exactly the two stacked screens (256 x 384), so a touch on it lands where the
+                    // finger is (LibretroDroid measures touches across the whole view, bars included)
+                    val ds = game.core.id == "melondsds"
+                    val portraitTouch = portrait && touchVisible()
                     AndroidView(
                         factory = { view },
-                        modifier = if (portrait && touchVisible()) Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.03f * state.settings.portraitScreenStep)).fillMaxWidth().fillMaxHeight(if (game.system.external) 0.54f else 0.46f) else Modifier.fillMaxSize(),
+                        modifier = when {
+                            // portrait: the two screens take most of the height, the controls sit under them
+                            ds && portraitTouch -> Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.01f * state.settings.portraitScreenStep))
+                                .fillMaxHeight(0.72f).aspectRatio(256f / 384f, matchHeightConstraintsFirst = true)
+                            ds -> Modifier.align(Alignment.Center).fillMaxHeight().aspectRatio(256f / 384f, matchHeightConstraintsFirst = true)
+                            portraitTouch -> Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.03f * state.settings.portraitScreenStep)).fillMaxWidth().fillMaxHeight(if (game.system.external) 0.54f else 0.46f)
+                            else -> Modifier.fillMaxSize()
+                        },
                     )
                 }
                 SlotRoot(state, gameProcess = true)
@@ -171,6 +184,11 @@ class GameActivity : ComponentActivity(), SlotHost {
             state.toast("gpSP needs gba_bios.bin (see the README). Using mGBA instead.")
             coreId = "mgba"
             game = game.copy(coreId = "mgba")
+        }
+        // Settings > Gameplay > PS1 geometry fix: PGXP is SwanStation's, so PS1 games run there while it is on
+        if (coreId == "pcsx_rearmed" && settings.pgxp) {
+            coreId = "swanstation"
+            game = game.copy(coreId = "swanstation")
         }
         val corePath = File(applicationInfo.nativeLibraryDir, "lib${coreId}_libretro_android.so")
         if (!corePath.exists()) { state.toast("Core $coreId is missing from this build"); handler.postDelayed({ finishCancelled() }, 1800); return }
@@ -434,6 +452,43 @@ class GameActivity : ComponentActivity(), SlotHost {
 
     // --- touch overlay -----------------------------------------------------------------------------------
 
+    private var screenTouchDown = 0L
+    private var screenTouching = false
+
+    /**
+     * DS touch screen: the on-screen controls hand over a finger that is on none of their buttons. It is passed to the
+     * game view as a one-finger touch, which LibretroDroid maps onto the picture and gives the core as its pointer.
+     */
+    override fun onScreenTouch(x: Float, y: Float, down: Boolean) {
+        val v = retro ?: return
+        val at = IntArray(2).also { v.getLocationInWindow(it) }
+        val now = android.os.SystemClock.uptimeMillis()
+        val action = when {
+            down && !screenTouching -> { screenTouchDown = now; android.view.MotionEvent.ACTION_DOWN }
+            down -> android.view.MotionEvent.ACTION_MOVE
+            screenTouching -> android.view.MotionEvent.ACTION_UP
+            else -> return
+        }
+        screenTouching = down
+        // a quick tap is held for a few frames: the core only looks at the touch once a frame
+        if (action == android.view.MotionEvent.ACTION_UP && now - screenTouchDown < 80) {
+            handler.postDelayed({ if (!screenTouching) onScreenLift(x - at[0], y - at[1]) }, 80 - (now - screenTouchDown))
+            return
+        }
+        val ev = android.view.MotionEvent.obtain(screenTouchDown, now, action, x - at[0], y - at[1], 0)
+        ev.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
+        v.onTouchEvent(ev)
+        ev.recycle()
+    }
+
+    private fun onScreenLift(x: Float, y: Float) {
+        val v = retro ?: return
+        val now = android.os.SystemClock.uptimeMillis()
+        val ev = android.view.MotionEvent.obtain(screenTouchDown, now, android.view.MotionEvent.ACTION_UP, x, y, 0)
+        v.onTouchEvent(ev)
+        ev.recycle()
+    }
+
     override fun onStick(right: Boolean, x: Float, y: Float) {
         retro?.sendMotionEvent(if (right) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y, 0)
     }
@@ -479,8 +534,9 @@ class GameActivity : ComponentActivity(), SlotHost {
         if (e.action != KeyEvent.ACTION_DOWN && e.action != KeyEvent.ACTION_UP) return super.dispatchKeyEvent(e)
         if (down && e.repeatCount > 0) return true
         val port = max(0, (e.device?.controllerNumber ?: 1) - 1)
-        val key = KeyMap.emuKey(e.keyCode, swap)
-        when (if (triggersAreButtons) 0 else e.keyCode) {
+        val raw = remapped(e.keyCode)
+        val key = gameKey(raw, swap)
+        when (if (triggersAreButtons) 0 else raw) {
             KeyEvent.KEYCODE_BUTTON_L2 -> { rewinding = down && settings.rewind; return true }
             KeyEvent.KEYCODE_BUTTON_R2 -> {
                 if (down) {
@@ -494,14 +550,30 @@ class GameActivity : ComponentActivity(), SlotHost {
         }
         // X/Y become turbo A/B on systems that don't use them
         val turboOk = settings.turbo && game.system.shape in TURBO_SHAPES
-        if (turboOk && (e.keyCode == KeyEvent.KEYCODE_BUTTON_X || e.keyCode == KeyEvent.KEYCODE_BUTTON_Y)) {
-            val target = if (e.keyCode == KeyEvent.KEYCODE_BUTTON_X) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
-            setTurbo(v, e.keyCode, target, down, port)
+        if (turboOk && (raw == KeyEvent.KEYCODE_BUTTON_X || raw == KeyEvent.KEYCODE_BUTTON_Y)) {
+            val target = if (raw == KeyEvent.KEYCODE_BUTTON_X) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
+            setTurbo(v, raw, target, down, port)
             return true
         }
         if (pad == null && key in GAMEPAD_KEYS_ALL) { v.sendKeyEvent(e.action, key, port); return true }
         if (key in GAMEPAD_KEYS_ALL) { v.sendKeyEvent(e.action, key, port); return true }
         return super.dispatchKeyEvent(e)
+    }
+
+    /** Settings > Controls > Remap buttons: the button this physical one stands for in games. */
+    private fun remapped(keyCode: Int): Int {
+        val from = KeyMap.pad(keyCode, false) ?: return keyCode
+        val to = settings.buttonMap[from.name]?.let { n -> Pad.entries.firstOrNull { it.name == n } } ?: return keyCode
+        return KeyMap.padToKey(to, false) ?: keyCode
+    }
+
+    /**
+     * The key the core gets: Settings > Controls > Swap A/B and X/Y, and on the PlayStation systems (PS1, PSP) the face
+     * buttons the other way round from the Nintendo-style ones, so the confirm button is Cross where it belongs.
+     */
+    private fun gameKey(keyCode: Int, swap: Boolean): Int {
+        val ps = game.system.shape == CartShape.DISC_PSX || game.system.shape == CartShape.UMD
+        return KeyMap.emuKey(keyCode, swap != ps)
     }
 
     private fun setTurbo(v: GLRetroView, source: Int, target: Int, down: Boolean, port: Int) {

@@ -265,12 +265,18 @@ object CartSpecs {
      * (its red "NINTENDO SWITCH" band is drawn by the cart painter) and the arrow under it.
      */
     private fun switchCard(): CartSpec {
-        val outline = roundedPoly(pts(0f, 6f, 70f, 6f, 76f, 0f, 104f, 0f, 110f, 6f, 180f, 6f, 180f, 262f, 0f, 262f), 10f)
+        // proportions taken from photos of real cards (392 x 567)
+        val outline = roundedPoly(pts(0f, 0f, 180f, 0f, 180f, 262f, 0f, 262f), 14f)
         return CartSpec(
             w = 180f, h = 262f, outline = outline,
-            label = Rect(12f, 20f, 168f, 232f), labelRadius = 7f, rim = 5f,
-            relief = listOf(Relief(Path().apply { moveTo(80f, 240f); lineTo(100f, 240f); lineTo(90f, 252f); close() }, raised = false)),
-            pinsTop = .92f, letteringY = 30f,
+            label = Rect(16f, 14f, 164f, 224f), labelRadius = 6f, rim = 5f,
+            relief = listOf(
+                // the little slot in the top edge
+                Relief(Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(Rect(68f, 2f, 112f, 8f), androidx.compose.ui.geometry.CornerRadius(2f))) }, raised = false),
+                // the arrow under the label
+                Relief(Path().apply { moveTo(80f, 232f); lineTo(100f, 232f); lineTo(90f, 244f); close() }, raised = false),
+            ),
+            pinsTop = .92f, letteringY = 26f,
         )
     }
 
