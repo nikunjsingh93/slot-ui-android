@@ -451,10 +451,11 @@ class SlotState(var host: SlotHost = object : SlotHost {}) {
         host.sfx(Sfx.Back)
     }
 
-    /** Keeps (or with null, forgets) the button layout of one system. */
-    fun saveTouchLayout(sys: GameSystem, tweak: List<Float>?) {
+    /** Keeps (or with null, forgets) the on-screen layout of one system in one orientation. */
+    fun saveTouchLayout(sys: GameSystem, portrait: Boolean, tweak: List<Float>?) {
+        val key = touchKey(sys, portrait)
         val keep = tweak != null && tweak != TOUCH_DEFAULT
-        settings = settings.copy(touchTweaks = if (keep) settings.touchTweaks + (sys.id to tweak!!) else settings.touchTweaks - sys.id)
+        settings = settings.copy(touchTweaks = if (keep) settings.touchTweaks + (key to tweak!!) else settings.touchTweaks - key)
         host.onSettingsChanged(settings)
     }
 

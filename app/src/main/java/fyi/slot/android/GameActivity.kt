@@ -17,6 +17,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -47,6 +49,7 @@ import fyi.slot.ui.Sfx
 import fyi.slot.ui.SlotHost
 import fyi.slot.ui.SlotRoot
 import fyi.slot.ui.SlotState
+import fyi.slot.ui.touchTweak
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -135,17 +138,20 @@ class GameActivity : ComponentActivity(), SlotHost {
                     // DS: the view is exactly the two stacked screens (256 x 384), so a touch on it lands where the
                     // finger is (LibretroDroid measures touches across the whole view, bars included)
                     val ds = game.core.id == "melondsds"
-                    val portraitTouch = portrait && touchVisible()
+                    // where the picture goes, as moved and resized in Settings > Controls > Edit button layout (same
+                    // function the editor draws its outline with)
+                    val wPx = constraints.maxWidth.toFloat()
+                    val hPx = constraints.maxHeight.toFloat()
+                    val area = fyi.slot.ui.gameScreenArea(
+                        game.system, ds, wPx, hPx, touch = touchVisible(), step = state.settings.portraitScreenStep,
+                        tweak = state.settings.touchTweak(game.system, portrait),
+                    )
+                    val dens = androidx.compose.ui.platform.LocalDensity.current
                     AndroidView(
                         factory = { view },
-                        modifier = when {
-                            // portrait: the two screens take most of the height, the controls sit under them
-                            ds && portraitTouch -> Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.01f * state.settings.portraitScreenStep))
-                                .fillMaxHeight(0.72f).aspectRatio(256f / 384f, matchHeightConstraintsFirst = true)
-                            ds -> Modifier.align(Alignment.Center).fillMaxHeight().aspectRatio(256f / 384f, matchHeightConstraintsFirst = true)
-                            portraitTouch -> Modifier.align(Alignment.TopCenter).padding(top = maxHeight * (0.03f * state.settings.portraitScreenStep)).fillMaxWidth().fillMaxHeight(if (game.system.external) 0.54f else 0.46f)
-                            else -> Modifier.fillMaxSize()
-                        },
+                        modifier = Modifier
+                            .offset { androidx.compose.ui.unit.IntOffset(area.left.toInt(), area.top.toInt()) }
+                            .size(with(dens) { area.width.toDp() }, with(dens) { area.height.toDp() }),
                     )
                 }
                 SlotRoot(state, gameProcess = true)

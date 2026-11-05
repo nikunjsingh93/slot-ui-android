@@ -286,6 +286,8 @@ internal data class Rectish(val l: Float, val t: Float, val r: Float, val b: Flo
     fun contains(p: Offset, slack: Float) = p.x in (l - slack)..(r + slack) && p.y in (t - slack)..(b + slack)
 }
 
+internal val SHOULDER_PADS = setOf(Pad.L1, Pad.R1, Pad.L2, Pad.R2)
+
 internal fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Float> = TOUCH_DEFAULT): TouchLayout {
     val u = m.u
     val w = m.w
@@ -352,14 +354,40 @@ internal fun layoutFor(sys: GameSystem, m: Metrics, tweak: List<Float> = TOUCH_D
         if (sys.shape != CartShape.N64) pills += Triple(Pad.R2, Rectish(w - 14 * u - 86 * u, 54 * u, w - 14 * u, 54 * u + 34 * u), "R2")
     }
     pills += Triple(Pad.Menu, Rectish(pcx - 28 * u, 12 * u, pcx + 28 * u, 12 * u + 24 * u), "MENU")
-    val t = if (tweak.size == 6) tweak else TOUCH_DEFAULT
+    val t = fullTweak(tweak)
     val scaled = btns.map { b -> TouchButtonSpec(b.pad, cx + (b.cx - cx) * t[3] + t[4] * w, cy + (b.cy - cy) * t[3] + t[5] * h, b.r * t[3], b.label, b.cDir) }
-    return TouchLayout(dpadCx + t[1] * w, dpadCy + t[2] * h, dpadR * t[0], scaled, pills, analog = sys.shape == CartShape.N64)
+    // shoulder buttons: each grows about its own middle, and they move as a mirrored pair (left and right come in together)
+    // Start/Select: move and grow together
+    val ssCx = pcx
+    val ssCy = py + ph / 2f
+    val moved = pills.map { (pad, r, label) ->
+        when (pad) {
+            in SHOULDER_PADS -> {
+                val s = t[TWEAK_SHOULDERS]
+                val left = (r.l + r.r) / 2f < w / 2f
+                val dx = t[TWEAK_SHOULDERS + 1] * w * (if (left) 1f else -1f)
+                val dy = t[TWEAK_SHOULDERS + 2] * h
+                val mx = (r.l + r.r) / 2f + dx
+                val my = (r.t + r.b) / 2f + dy
+                val hw = (r.r - r.l) / 2f * s
+                val hh = (r.b - r.t) / 2f * s
+                Triple(pad, Rectish(mx - hw, my - hh, mx + hw, my + hh), label)
+            }
+            Pad.Start, Pad.Select -> {
+                val s = t[TWEAK_START]
+                val dx = t[TWEAK_START + 1] * w
+                val dy = t[TWEAK_START + 2] * h
+                Triple(pad, Rectish(ssCx + (r.l - ssCx) * s + dx, ssCy + (r.t - ssCy) * s + dy, ssCx + (r.r - ssCx) * s + dx, ssCy + (r.b - ssCy) * s + dy), label)
+            }
+            else -> Triple(pad, r, label)
+        }
+    }
+    return TouchLayout(dpadCx + t[1] * w, dpadCy + t[2] * h, dpadR * t[0], scaled, moved, analog = sys.shape == CartShape.N64)
 }
 
 @Composable
 fun TouchControls(state: SlotState, sys: GameSystem, m: Metrics) {
-    val tweak = state.settings.touchTweaks[sys.id] ?: TOUCH_DEFAULT
+    val tweak = state.settings.touchTweak(sys, m.portrait)
     val layout = remember(sys, m, tweak) { layoutFor(sys, m, tweak) }
     var pressed by remember { mutableStateOf(emptySet<Pad>()) }
     var stick by remember { mutableStateOf(Offset.Zero) }

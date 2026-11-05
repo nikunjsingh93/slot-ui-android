@@ -104,6 +104,7 @@ fun main(args: Array<String>) {
     if (which == "covermatch") coverMatchCheck(out)
     if (which == "launchbox") launchBoxCheck(out)
     if (which == "shapes") shapeShots(out)
+    if (which == "editor") editorShots(out)
     if (which == "newshapes") newShapes(out)
     if (which == "labelcut") labelCutCheck(out, File(args[2]))
     if (which == "consoles") consoleShots(out)
@@ -428,4 +429,21 @@ fun newShapes(out: File) {
     )
     val s = Shoot(out, "new_shapes", 1500, 560) { CartGallery(games) }
     s.ms(300); s.snap(); s.close()
+}
+
+/** The layout editor for the DS, portrait and landscape, one with the shoulders, Start/Select and screen moved. */
+fun editorShots(out: File) {
+    val lib = listOf("Lunar Garden", "Moss Kingdom").map { sample(GameSystem.NDS, it) }
+    val moved = listOf(1f, 0f, 0f, 1f, 0f, 0f, 1.2f, .05f, .08f, 1.3f, 0f, -.05f, .9f, 0f, .04f)
+    for ((name, size, tweak) in listOf(
+        Triple("editor_portrait", 720 to 1280, null), Triple("editor_landscape", 1280 to 960, null), Triple("editor_moved", 720 to 1280, moved),
+    )) {
+        val st = SlotState().apply {
+            setLibrary(lib); gamepad = false
+            if (tweak != null) settings = settings.copy(touchTweaks = mapOf("nds" to tweak))
+            openLayoutEditor(GameSystem.NDS)
+        }
+        val s = Shoot(out, name, size.first, size.second) { SlotRoot(st) }
+        s.ms(400); s.snap(); s.close()
+    }
 }

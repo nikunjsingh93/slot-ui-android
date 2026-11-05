@@ -163,8 +163,10 @@ their own menus and their own saves.
 - **X / Y** act as turbo A / B on systems without those buttons (GB, GBA, NES, Master System, Game Gear, PC Engine).
 - **On-screen controls** appear when no controller is connected (**Settings > Controls > On-screen controls**).
   PlayStation, PSP and Dreamcast get the four face buttons and two shoulder rows; N64 gets an analog stick, C buttons and Z.
-- **Edit button layout** (**Settings > Controls**, also in the pause menu): pick a system, then drag the d-pad or the
-  buttons to move them and pinch to resize them. **Reset** puts the defaults back. Each system keeps its own layout.
+- **Edit button layout** (**Settings > Controls**, also in the pause menu): pick a system, then drag the d-pad, the face
+  buttons, L / R (they move as a mirrored pair), Start / Select or the game screen (the outline; for DS both screens) to
+  move them, and pinch to resize them. **Reset** puts the defaults back. Each system keeps its own layout, separately
+  for portrait and landscape.
 - **Portrait:** the game picture sits a little below the top edge so the buttons have room; move it with
   **Settings > Screen > Screen position (portrait)**.
 

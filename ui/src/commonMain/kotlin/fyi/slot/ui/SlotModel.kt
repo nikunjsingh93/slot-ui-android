@@ -122,8 +122,58 @@ interface SlotHost {
 
 enum class Sfx { Insert, Eject, Tick, Select, Back }
 
-/** No change: scale 1 and no offset for both the d-pad and the face buttons. */
-val TOUCH_DEFAULT = listOf(1f, 0f, 0f, 1f, 0f, 0f)
+/**
+ * No change: scale 1 and no offset (x, y as shares of the screen) for each part of the on-screen layout, in order:
+ * the d-pad, the face buttons, the shoulder buttons (L/R/L2/R2), Start/Select, and the game screen itself.
+ */
+val TOUCH_DEFAULT = listOf(1f, 0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f)
+
+/** Indices into a layout tweak where each part's (scale, x, y) start. */
+const val TWEAK_DPAD = 0
+const val TWEAK_BUTTONS = 3
+const val TWEAK_SHOULDERS = 6
+const val TWEAK_START = 9
+const val TWEAK_SCREEN = 12
+
+/** A layout saved by an older version (fewer parts) padded out with the defaults. */
+fun fullTweak(t: List<Float>?): List<Float> = if (t == null || t.size > TOUCH_DEFAULT.size) TOUCH_DEFAULT else t + TOUCH_DEFAULT.drop(t.size)
+
+/** Layouts are kept per system and orientation: portrait under the system id, landscape under "<id>@l". */
+fun touchKey(sys: GameSystem, portrait: Boolean) = if (portrait) sys.id else sys.id + "@l"
+
+/** The layout for [sys] in this orientation; landscape starts from the portrait one until it is edited itself. */
+fun Settings.touchTweak(sys: GameSystem, portrait: Boolean): List<Float> =
+    fullTweak(touchTweaks[touchKey(sys, portrait)] ?: touchTweaks[sys.id])
+
+/**
+ * Where the game picture goes on a [w] x [h] screen (pixels): the DS's two stacked screens fitted to their shape, or the
+ * area above the on-screen controls in portrait, or the whole screen, then moved and resized as the layout says.
+ */
+fun gameScreenArea(sys: GameSystem, ds: Boolean, w: Float, h: Float, touch: Boolean, step: Int, tweak: List<Float>): androidx.compose.ui.geometry.Rect {
+    val portrait = w < h
+    val base = when {
+        ds && portrait && touch -> {
+            val top = h * 0.01f * step
+            val ww = minOf(w, h * 0.72f * 256f / 384f)
+            androidx.compose.ui.geometry.Rect((w - ww) / 2f, top, (w + ww) / 2f, top + ww * 384f / 256f)
+        }
+        ds -> {
+            val ww = minOf(w, h * 256f / 384f)
+            val hh = ww * 384f / 256f
+            androidx.compose.ui.geometry.Rect((w - ww) / 2f, (h - hh) / 2f, (w + ww) / 2f, (h + hh) / 2f)
+        }
+        portrait && touch -> {
+            val top = h * 0.03f * step
+            androidx.compose.ui.geometry.Rect(0f, top, w, top + h * (if (sys.external) .54f else .46f))
+        }
+        else -> androidx.compose.ui.geometry.Rect(0f, 0f, w, h)
+    }
+    val t = fullTweak(tweak)
+    val s = t[TWEAK_SCREEN]
+    val cx = base.center.x + t[TWEAK_SCREEN + 1] * w
+    val cy = base.center.y + t[TWEAK_SCREEN + 2] * h
+    return androidx.compose.ui.geometry.Rect(cx - base.width * s / 2f, cy - base.height * s / 2f, cx + base.width * s / 2f, cy + base.height * s / 2f)
+}
 
 /** List view text size; rows grow with the text so the highlight still fits. */
 enum class ListSize(val label: String, val scale: Float) { Small("Small", 0.85f), Medium("Medium", 1f), Large("Large", 1.2f), XLarge("Extra large", 1.4f) }
