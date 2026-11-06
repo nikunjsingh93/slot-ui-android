@@ -141,6 +141,9 @@ class CartPainter private constructor(
      */
     private val realLabel: Boolean = spec.disc == null && clearCorners && REAL_LABEL_AREA.containsKey(game.system.shape)
 
+    /** SNES without a real label: the cover is the box art, which is shown whole (the label window is far wider). */
+    private val boxOnLabel: Boolean = game.system.shape == CartShape.SNES && cover != null && !realLabel && !wholeScan
+
     /** Where the label is drawn: the cart's own window, or for a [realLabel] the real label's shape fitted into its area. */
     private val labelRect: Rect = if (!realLabel || cover == null) spec.label else {
         val area = REAL_LABEL_AREA.getValue(game.system.shape)
@@ -270,7 +273,27 @@ class CartPainter private constructor(
         clipPath(clip) {
             val l = if (switchCard) Rect(full.left, full.top + SWITCH_BAND, full.right, full.bottom - SWITCH_STRIP) else full
             if (switchCard) drawRect(Color.White, full.topLeft, full.size, alpha = alpha)
-            if (cover != null) {
+            if (cover != null && boxOnLabel) {
+                // a SNES box cover is much less wide than the label: show all of it, over a dimmed fill of itself
+                val fill = max(l.width / cover.width, l.height / cover.height)
+                val fw = (l.width / fill).toInt().coerceAtMost(cover.width)
+                val fh = (l.height / fill).toInt().coerceAtMost(cover.height)
+                drawRect(Color(0xFF101013), l.topLeft, l.size, alpha = alpha)
+                drawImage(
+                    cover,
+                    srcOffset = IntOffset((cover.width - fw) / 2, (cover.height - fh) / 2), srcSize = IntSize(fw, fh),
+                    dstOffset = IntOffset(l.left.toInt(), l.top.toInt()), dstSize = IntSize(l.width.toInt() + 1, l.height.toInt() + 1),
+                    alpha = alpha * .28f,
+                )
+                val fit = min(l.width / cover.width, l.height / cover.height)
+                val w = cover.width * fit
+                val h = cover.height * fit
+                drawImage(
+                    cover,
+                    dstOffset = IntOffset((l.center.x - w / 2f).toInt(), (l.center.y - h / 2f).toInt()), dstSize = IntSize(w.toInt(), h.toInt()),
+                    alpha = alpha,
+                )
+            } else if (cover != null) {
                 val sc = max(l.width / cover.width, l.height / cover.height)
                 val sw = (l.width / sc).toInt().coerceAtMost(cover.width)
                 val sh = (l.height / sc).toInt().coerceAtMost(cover.height)

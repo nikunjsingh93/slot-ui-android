@@ -36,7 +36,9 @@ object RomFiles {
         val out = File(dir, "${game.id}.$ext")
         // Keep only the most recent couple of ROMs around.
         dir.listFiles()?.filter { it != out }?.sortedByDescending { it.lastModified() }?.drop(2)?.forEach { it.delete() }
-        if (out.exists() && out.length() > 0 && (game.size == 0L || game.entryName.isNotEmpty() || out.length() == game.size)) return out
+        // (a headerless NES ROM gets 16 bytes of header added to its copy)
+        val sameSize = out.length() == game.size || (ext.equals("nes", true) && out.length() == game.size + 16)
+        if (out.exists() && out.length() > 0 && (game.size == 0L || game.entryName.isNotEmpty() || sameSize)) return out.also { NesHeader.fix(ctx, it) }
 
         val tmp = File(dir, "${game.id}.tmp")
         val input = ctx.contentResolver.openInputStream(Uri.parse(game.uri)) ?: error("Can't open ${game.stem}")
@@ -57,6 +59,7 @@ object RomFiles {
         }
         out.delete()
         tmp.renameTo(out)
+        NesHeader.fix(ctx, out)
         return out
     }
 }

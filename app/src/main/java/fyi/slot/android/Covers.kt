@@ -57,9 +57,11 @@ class Covers(private val ctx: Context) {
         }?.let { return@withContext it }
         // N64, SNES, NES: the label cut out of a LaunchBox photo of the real cartridge
         if (game.system.id in LAUNCHBOX_CARTS) real(game, "cartlabel", allowNetwork) { fromLaunchBox(game)?.let(::cutLabel) }?.let { return@withContext it }
-        val hit = File(cache, "${game.id}.png")
+        // SNES carts show the box cover when there is no real label (kept apart from the title screens older versions saved)
+        val tag = if (game.system.id == "snes") ".box" else ""
+        val hit = File(cache, "${game.id}$tag.png")
         if (hit.exists()) return@withContext decode(hit)
-        val miss = File(cache, "${game.id}.miss")
+        val miss = File(cache, "${game.id}$tag.miss")
         if (miss.exists() && System.currentTimeMillis() - miss.lastModified() < RETRY_MS) return@withContext null
         if (!allowNetwork) return@withContext null
 
@@ -298,7 +300,7 @@ class Covers(private val ctx: Context) {
     // --- libretro thumbnails -----------------------------------------------------------------------
 
     private fun kinds(game: Game): List<String> = when {
-        game.system.external && game.system.shape != CartShape.N64 -> listOf("Named_Boxarts", "Named_Titles", "Named_Snaps")
+        game.system.external && game.system.shape != CartShape.N64 || game.system.id == "snes" -> listOf("Named_Boxarts", "Named_Titles", "Named_Snaps")
         else -> listOf("Named_Titles", "Named_Boxarts", "Named_Snaps")
     }
 
