@@ -44,7 +44,7 @@ rl.on('line', raw => {
     cur = null; return;
   }
   if (cur && l === '</GameImage>') {
-    if ((cur.Type === 'Disc' || cur.Type === 'Cart - Front') && cur.FileName) {
+    if ((cur.Type === 'Disc' || cur.Type === 'Cart - Front' || cur.Type === 'Fanart - Cart - Front') && cur.FileName) {
       const a = discs.get(cur.DatabaseID) || [];
       a.push({ file: cur.FileName, region: REGION[cur.Region] || '', type: cur.Type });
       discs.set(cur.DatabaseID, a);
@@ -64,7 +64,9 @@ rl.on('close', () => {
   for (const [id, all] of discs) {
     const g = games.get(id);
     if (!g) continue;
-    const list = all.filter(i => i.type === (TYPE[g.system] || 'Disc'));
+    // carts: real photos first; fan-made renders of the cartridge fill in regions (or games) with no photo
+    const want = TYPE[g.system] || 'Disc';
+    const list = [...all.filter(i => i.type === want), ...(TYPE[g.system] ? all.filter(i => i.type === 'Fanart - ' + want) : [])];
     if (!list.length) continue;
     const o = out[g.system] || (out[g.system] = {});
     const names = [g.name, ...(alts.get(id) || [])];
