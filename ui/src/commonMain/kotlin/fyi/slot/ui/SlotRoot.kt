@@ -6,6 +6,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -103,6 +106,7 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
     val shelf = state.shelf
     val n = shelf.size
     val front = remember(m) { buildSlotFront(m) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     // 0 = on the shelf .. 1 = the cart is seated in the slot (slot's `seat`)
     var seat by remember { mutableFloatStateOf(if (screen == Screen.Playing) 1f else 0f) }
@@ -126,7 +130,8 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
     LaunchedEffect(phase) {
         when (phase) {
             1 -> {
-                var t = 0f
+                // a cart pushed down by hand carries on from where the finger let it go
+                var t = seat * SEATED_AT
                 var clunk = false
                 power = 0f
                 runFrames { dt ->
@@ -189,6 +194,49 @@ private fun Browser(state: SlotState, m: Metrics, assets: CartAssets) {
                     onDragStarted = { state.flingVel = 0f },
                     onDragStopped = { velocity -> state.fling(-velocity / cwSel) },
                 )
+                // drag the middle cart down into the slot: it follows the finger and, let go far enough down, goes in
+                .pointerInput(n, m, vertical) {
+                    if (vertical) return@pointerInput
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        if (state.screen != Screen.Browse || state.overlay != Overlay.None || state.gridView || hitCart(state, m, down.position) != 0) return@awaitEachGesture
+                        val game = state.current ?: return@awaitEachGesture
+                        val spec = CartSpecs.of(game)
+                        val slop = viewConfiguration.touchSlop
+                        var pushing = false
+                        var reach = 0f
+                        val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                        tracker.addPosition(down.uptimeMillis, down.position)
+                        while (true) {
+                            val ev = awaitPointerEvent()
+                            val c = ev.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!c.pressed) break
+                            tracker.addPosition(c.uptimeMillis, c.position)
+                            val d = c.position - down.position
+                            if (!pushing) {
+                                if (d.getDistance() < slop) continue
+                                // mostly downwards: this is a push; anything else is left to the shelf swipe and taps
+                                if (d.y <= 0f || d.y < abs(d.x) * 1.2f) return@awaitEachGesture
+                                pushing = true
+                            }
+                            c.consume()
+                            val (s0, r) = seatForDrag(m, spec, d.y)
+                            seat = s0
+                            reach = r
+                        }
+                        if (!pushing) return@awaitEachGesture
+                        val vy = tracker.calculateVelocity().y
+                        if (reach > 0.45f || (vy > 1200f && reach > 0.12f)) {
+                            state.insert(game, resume = true)
+                        } else {
+                            // not far enough: it springs back up onto the shelf
+                            scope.launch {
+                                runFrames { dt -> seat = (seat - dt * 2.4f).coerceAtLeast(0f); seat > 0f && state.screen == Screen.Browse }
+                                if (state.screen == Screen.Browse) seat = 0f
+                            }
+                        }
+                    }
+                }
                 .pointerInput(n, m) {
                     detectTapGestures(
                         onTap = { at -> handleTap(state, m, at) },

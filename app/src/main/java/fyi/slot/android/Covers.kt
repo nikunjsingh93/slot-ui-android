@@ -51,12 +51,12 @@ class Covers(private val ctx: Context) {
         // Game Boy, Color and Advance: the real label from slot's own art server, matched by the ROM's CRC32
         if (game.system in SLOT_ART_SYSTEMS) real(game, "label", allowNetwork) { fromSlotArt(game) }?.let { return@withContext it }
         // disc systems: a scan of the real disc from the LaunchBox games database, matched by name
-        if (game.system.id in LAUNCHBOX_SYSTEMS) real(game, "disc", allowNetwork) {
+        if (game.system.id in LAUNCHBOX_SYSTEMS) real(game, "disc", allowNetwork, launchBoxList(game.system.id)) {
             // PS1: the PSX1G1B1C1D collection when LaunchBox has no disc for the game
             fromLaunchBox(game) ?: if (game.system.id == "psx") fromPsxDiscs(game) else null
         }?.let { return@withContext it }
         // N64, SNES, NES: the label cut out of a LaunchBox photo of the real cartridge
-        if (game.system.id in LAUNCHBOX_CARTS) real(game, "cartlabel", allowNetwork) { fromLaunchBox(game)?.let(::cutLabel) }?.let { return@withContext it }
+        if (game.system.id in LAUNCHBOX_CARTS) real(game, "cartlabel", allowNetwork, launchBoxList(game.system.id)) { fromLaunchBox(game)?.let(::cutLabel) }?.let { return@withContext it }
         // SNES carts show the box cover when there is no real label (kept apart from the title screens older versions saved)
         val tag = if (game.system.id == "snes") ".box" else ""
         val hit = File(cache, "${game.id}$tag.png")
@@ -83,11 +83,13 @@ class Covers(private val ctx: Context) {
      * A scan of the real label or disc from [fetch], cached as `<id>.<kind>.png`. A game it has none for is remembered
      * (`.miss`) for a week, unless the network was down, and then the usual art is used.
      */
-    private suspend fun real(game: Game, kind: String, allowNetwork: Boolean, fetch: () -> Bitmap?): ImageBitmap? {
+    private suspend fun real(game: Game, kind: String, allowNetwork: Boolean, list: File? = null, fetch: () -> Bitmap?): ImageBitmap? {
         val got = File(cache, "${game.id}.$kind.png")
         if (got.exists()) decode(got)?.let { return it }
         val none = File(cache, "${game.id}.$kind.miss")
-        if (!allowNetwork || (none.exists() && System.currentTimeMillis() - none.lastModified() < RETRY_MS)) return null
+        // a miss only counts against the list it was looked up in: a newer list gets a fresh look
+        val stale = list != null && (!list.exists() || none.lastModified() < list.lastModified())
+        if (!allowNetwork || (none.exists() && !stale && System.currentTimeMillis() - none.lastModified() < RETRY_MS)) return null
         val bmp = try {
             gate.withPermit { fetch() }
         } catch (e: CancellationException) {
@@ -105,11 +107,14 @@ class Covers(private val ctx: Context) {
     /** Per system: "Game Name (Region)" -> LaunchBox image file, from art/launchbox in this repo (built by tools/launchbox-index). */
     private val discLists = java.util.concurrent.ConcurrentHashMap<String, Pair<Map<String, String>, CoverMatch.Index>>()
 
+    /** The cached LaunchBox list of a system (v2: carts include fan-made cartridge renders). */
+    private fun launchBoxList(system: String) = File(indexDir, "launchbox-v2-$system.json")
+
     private fun discList(system: String): Pair<Map<String, String>, CoverMatch.Index>? {
         discLists[system]?.let { return it }
         synchronized(locks.getOrPut("lb/$system") { Any() }) {
             discLists[system]?.let { return it }
-            val f = File(indexDir, "launchbox-$system.json")
+            val f = launchBoxList(system)
             if (!f.exists() || System.currentTimeMillis() - f.lastModified() > INDEX_MS) {
                 get("$DISC_LISTS$system.json")?.takeIf { it.isNotEmpty() && it[0] == '{'.code.toByte() }?.let { body ->
                     File(indexDir, "launchbox-$system.part").also { it.writeBytes(body) }.renameTo(f)

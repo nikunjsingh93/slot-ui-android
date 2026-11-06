@@ -129,6 +129,25 @@ fun shelfPose(m: Metrics, spec: CartSpec, offset: Float, recede: Float = 0f): Ca
 }
 
 /** The selected cart on its way into (or out of) the slot. [restCx] is where it sat on the shelf. */
+/**
+ * Dragging a cart down by hand: the seat that puts its foot [dy] pixels below where it rests on the shelf, stopping
+ * where it meets the slot. Returns (seat, how far it is to the slot from 0 to 1).
+ */
+fun seatForDrag(m: Metrics, spec: CartSpec, dy: Float): Pair<Float, Float> {
+    val foot0 = m.foot(spec)
+    val span = m.seatedY + spec.h * m.u - foot0
+    val catch = ((m.bandTop - foot0) / span).coerceIn(0.05f, 0.95f)
+    val want = (dy / span).coerceIn(0f, catch)
+    // travel() is smooth and only grows up to the catch: find the seat for the wanted travel by halving
+    var lo = 0f
+    var hi = CATCH_IN
+    repeat(18) {
+        val mid = (lo + hi) / 2f
+        if (travel(mid, catch) < want) lo = mid else hi = mid
+    }
+    return lo to want / catch
+}
+
 fun seatedPose(m: Metrics, spec: CartSpec, restCx: Float, seat: Float): CartPose {
     val s0 = m.cartScale(spec)
     val w0 = spec.w * s0
