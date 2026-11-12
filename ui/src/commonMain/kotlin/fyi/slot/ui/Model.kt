@@ -311,10 +311,17 @@ data class Game(
  * a "-decrypted" tail and download-site names ("Switch-xci.com"). Regions and [tags] stay for the matcher.
  */
 fun tidyStem(stem: String): String = stem
-    .replace(Regex("""^(?:3DS|NDS|NSW|DS)?\d{3,5}\s*-\s+""", RegexOption.IGNORE_CASE), "")
-    .replace(Regex("""[\s_-]*decrypted$""", RegexOption.IGNORE_CASE), "")
-    .replace(Regex("""\s*[A-Za-z0-9][\w-]*\.(?:com|net|org|io|ru|xyz)\b""", RegexOption.IGNORE_CASE), "")
+    .replace(RELEASE_NUMBER, "")
+    .replace(DECRYPTED_TAIL, "")
+    .replace(SITE_NAME, "")
     .trim()
+
+// Compiled once: Game.title runs this for every comparison when a shelf is sorted, and compiling a case-insensitive
+// pattern costs milliseconds on Android (it made the return from a game to the shelf stall for two seconds).
+private val RELEASE_NUMBER = Regex("""^(?:3DS|NDS|NSW|DS)?\d{3,5}\s*-\s+""", RegexOption.IGNORE_CASE)
+private val DECRYPTED_TAIL = Regex("""[\s_-]*decrypted$""", RegexOption.IGNORE_CASE)
+private val SITE_NAME = Regex("""\s*[A-Za-z0-9][\w-]*\.(?:com|net|org|io|ru|xyz)\b""", RegexOption.IGNORE_CASE)
+private val SPACES = Regex("""\s+""")
 
 /** Strip (region) and [tags] and collapse spaces, as slot's cart.rs clean_label does. */
 fun cleanLabel(stem: String): String = cleanLabelRaw(tidyStem(stem))
@@ -327,7 +334,7 @@ private fun cleanLabelRaw(stem: String): String {
         ')', ']' -> depth = (depth - 1).coerceAtLeast(0)
         else -> if (depth == 0) sb.append(ch)
     }
-    val out = sb.toString().split(Regex("\\s+")).filter { it.isNotEmpty() && it != "-" }.joinToString(" ")
+    val out = sb.toString().split(SPACES).filter { it.isNotEmpty() && it != "-" }.joinToString(" ")
     return out.ifEmpty { stem }
 }
 
